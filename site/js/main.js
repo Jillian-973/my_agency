@@ -12,6 +12,7 @@ import { creerVisite } from './visite.js';
 import { creerCiel, nomPhase, eclairage } from './planetes.js';
 import { creerMinimap } from './minimap.js';
 import { creerFenetreAgent } from './fenetre-agent.js';
+import { creerOnglets } from './onglets.js';
 import { POLES, ETATS } from './donnees.js';
 
 const $ = (s) => document.querySelector(s);
@@ -212,6 +213,7 @@ function allerVers(z) {
   zoneActive = z;
   voler(new THREE.Vector3(z.x, z.y + z.bas * .5, z.z), zoomPour(z));
   afficherFiche(z);
+  onglets.suivreZone();
 }
 function vueEnsemble() {
   zoneActive = null;
@@ -266,6 +268,12 @@ function parlerA(pose) {
   survol.hidden = true;
   fenetre.ouvrir(pose.agent);
 }
+/* ================= Onglets du bas : « Pôles » (lieux un par un) et « Équipe » (ce que fait chacun) ================= */
+const onglets = creerOnglets({
+  zones, agentsPoses, allerVers, zoneActive: () => zoneActive,
+  parler: (pose) => parlerA(pose),
+  desactive: () => fenetre.ouverte() || visite.actif(),
+});
 // minimap de la visite (en haut à droite) : plan du bureau, agents et visiteur
 const posAgent = new THREE.Vector3();
 const minimap = creerMinimap({
@@ -287,7 +295,7 @@ const lacetVers = (dx, dz) => Math.atan2(-dx, -dz);
 const VERS_INTERIEUR = { n: [0, 1], s: [0, -1], w: [1, 0], e: [-1, 0] };
 function passerEnVisite(x, z, lacet) {
   vol = null; controls.enabled = false; controls.autoRotate = false;
-  $('#fiche').hidden = true; survol.hidden = true; document.body.classList.add('en-visite');
+  $('#fiche').hidden = true; survol.hidden = true; document.body.classList.add('en-visite'); onglets.fermer();
   for (const k in facade) { facade[k].tall.visible = true; facade[k].low.visible = false; }   // tous les murs debout
   cleFacades = ''; renderer.shadowMap.needsUpdate = true;
   visite.entrer(x, z, lacet);
@@ -475,7 +483,7 @@ fpsEl.title = 'Carte graphique utilisée : ' + GPU;
 if (LOGICIEL) { renderer.shadowMap.enabled = false; pr = PR_MIN; renderer.setPixelRatio(pr); }
 
 // accès pratique depuis la console du navigateur (débogage)
-window.qg = { scene, camera, controls, zones, agents: agentsPoses, portes, allerVers, vueEnsemble, entrerDans, vueDuHaut, visite };
+window.qg = { scene, camera, controls, zones, agents: agentsPoses, portes, allerVers, vueEnsemble, entrerDans, vueDuHaut, visite, onglets };
 
 /* ================= Boucle ================= */
 const clock = new THREE.Clock();

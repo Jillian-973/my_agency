@@ -123,6 +123,28 @@
   </section>
 </div>
 
+<!-- onglets discrets en bas de l'écran : parcourir les pôles et les lieux, voir ce que fait l'équipe -->
+<nav id="onglets" aria-label="Onglets du QG">
+  <button type="button" data-tiroir="poles" aria-expanded="false" aria-controls="tiroir-poles">Pôles</button>
+  <button type="button" data-tiroir="equipe" aria-expanded="false" aria-controls="tiroir-equipe">Équipe<span class="compte" hidden></span></button>
+</nav>
+<section id="tiroir-poles" class="tiroir sf-cadre cadre-entete" data-pole="qg" hidden aria-label="Pôles et lieux, un par un">
+  <h2 class="sf-entete">Pôles et lieux</h2>
+  <button class="fermer sf-fermer" type="button" aria-label="Fermer l'onglet Pôles" title="Fermer">×</button>
+  <div class="pas">
+    <button class="prec sf-bouton gris" type="button" aria-label="Lieu précédent" title="Précédent">‹</button>
+    <p class="infos" aria-live="polite"><b></b><span></span><small></small></p>
+    <button class="suiv sf-bouton gris" type="button" aria-label="Lieu suivant" title="Suivant">›</button>
+  </div>
+  <div class="points" role="group" aria-label="Aller directement à un pôle ou à un lieu"></div>
+</section>
+<section id="tiroir-equipe" class="tiroir sf-cadre cadre-entete" data-pole="qg" hidden aria-label="Ce que fait l'équipe en ce moment">
+  <h2 class="sf-entete">Équipe · en ce moment</h2>
+  <button class="fermer sf-fermer" type="button" aria-label="Fermer l'onglet Équipe" title="Fermer">×</button>
+  <p class="resume"></p>
+  <div class="defile"><div class="groupes"></div></div>
+</section>
+
 <div id="survol" class="sf-bulle" hidden></div>
 <div class="aide sf-bulle">Clic gauche : tourner · molette ou pincer : zoom · clic droit, ZQSD ou flèches : se déplacer · double-clic : entrer · clic sur un agent : lui parler · Échap : vue d'ensemble</div>
 <div id="fps" class="sf-bulle"></div>

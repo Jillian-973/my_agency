@@ -166,7 +166,9 @@ function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null } = 
   const dossier = path.join(TRAVAUX, agent.prenom);
   fs.mkdirSync(dossier, { recursive: true });
   const avant = listerFichiers(dossier);
-  const t = { id, agent: agent.id, prenom: agent.prenom, mode, etat: 'en cours', debut: Date.now(), dossier, evenements: [], abonnes: new Set(), corbeille: [] };
+  const t = { id, agent: agent.id, prenom: agent.prenom, mode, etat: 'en cours', debut: Date.now(), dossier, evenements: [], abonnes: new Set(), corbeille: [],
+    resume: mode === 'corbeille' ? `Corbeille Gmail : ${idsCorbeille ? idsCorbeille.size : 0} mail(s) validé(s)` : consigne.replace(/\s+/g, ' ').trim().slice(0, 160),   // pour l'onglet « Équipe »
+    derniere: null };
   taches.set(id, t);
   if (taches.size > 50) for (const [k, v] of taches) { if (v.etat !== 'en cours') { taches.delete(k); break; } }
   const budgetMax = mode === 'corbeille' ? BUDGET_CORBEILLE : BUDGET_TACHE;
@@ -184,7 +186,7 @@ function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null } = 
     if (!avecConnecteurs) {
       args = ['-p', '--model', 'sonnet', ...COMMUNES, '--tools', OUTILS_TACHE.join(','), '--allowedTools', OUTILS_TACHE.join(','), ...fin];
     } else {
-      diffuser(t, { type: 'info', texte: 'Branchement des connecteurs…' });
+      diffuser(t, { type: 'info', texte: 'Branchement des connecteurs…' }); t.derniere = 'Branchement des connecteurs…';
       const d = await CNX.decouvrir(CLAUDE);
       if (t.etat !== 'en cours') return;
       const r = CNX.regles(agent.id, d, mode);
@@ -221,7 +223,9 @@ function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null } = 
         if (j.type === 'assistant' && j.message && Array.isArray(j.message.content)) {
           for (const c of j.message.content) {
             if (c.type !== 'tool_use') continue;
-            diffuser(t, { type: 'outil', outil: CNX.nomLisible(c.name), fichier: fichierDe(c.input) });
+            const outil = CNX.nomLisible(c.name), fichier = fichierDe(c.input);
+            diffuser(t, { type: 'outil', outil, fichier });
+            t.derniere = fichier ? `${outil} · ${fichier}` : outil;
             // garde-fou : un appel interdit (envoi, corbeille sans accord, mail hors liste…) arrête aussitôt la session
             if (String(c.name).startsWith('mcp__')) {
               const alerte = CNX.controler(agent.id, c.name, c.input, mode, idsCorbeille);
@@ -310,7 +314,7 @@ async function api(req, res, url) {
 
   if (req.method === 'GET' && p === '/api/etat') {
     const connecteurs = Object.fromEntries(Object.keys(EQUIPE).filter(CNX.aDesConnecteurs).map(id => [id, CNX.connecteursDe(id)]));
-    return json(res, 200, { claude: !!CLAUDE, enCours: enCours().map(t => ({ id: t.id, agent: t.agent })), max: TACHES_MAX, connecteurs });
+    return json(res, 200, { claude: !!CLAUDE, enCours: enCours().map(t => ({ id: t.id, agent: t.agent, mode: t.mode, debut: t.debut, resume: t.resume, derniere: t.derniere })), max: TACHES_MAX, connecteurs });
   }
 
   if (req.method === 'POST' && (p === '/api/discuter' || p === '/api/taches')) {
