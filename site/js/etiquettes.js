@@ -70,6 +70,29 @@ export function etiquetteAgent(data, couleurPole, parent) {
   return item;
 }
 
+/**
+ * En visite à la première personne : les étiquettes de salles disparaissent ; celles des agents gardent
+ * une taille réelle (environ 55 cm de haut), ne s'affichent qu'à moins de 7 m et sont cachées par les murs.
+ */
+const pa = new THREE.Vector3();
+export function ajusterEtiquettesVisite(camPos) {
+  cle = '';
+  for (const e of salles) e.sprite.visible = false;
+  for (const e of agents) {
+    e.sprite.material.depthTest = true;
+    e.sprite.scale.copy(e.base).multiplyScalar(.55 / 1.7);
+    e.sprite.getWorldPosition(pa);
+    const d = pa.distanceTo(camPos);
+    const a = THREE.MathUtils.clamp((7.5 - d) / 2, 0, 1);
+    e.sprite.material.opacity = a; e.sprite.visible = a > .01;
+  }
+}
+export function quitterEtiquettesVisite() {
+  for (const e of salles) e.sprite.visible = true;
+  for (const e of agents) e.sprite.material.depthTest = false;
+  cle = '';
+}
+
 /** Ajuste la taille (bornée en pixels) et la visibilité des étiquettes à chaque changement de vue. */
 let cle = '';
 export function ajusterEtiquettes(camera, hauteurEcran) {

@@ -39,6 +39,7 @@ const forgeHole = { x0: FORGE.x - FORGE.w / 2, x1: FORGE.x + FORGE.w / 2, z0: FO
 export function construireMonde(scene) {
   const world = grp(scene);
   const zones = [];            // salles cliquables
+  const portes = [];           // portes qui s'ouvrent avec E
   const facade = {};
   for (const [k, nx, nz] of [['n', 0, -1], ['s', 0, 1], ['w', -1, 0], ['e', 1, 0]]) facade[k] = { tall: grp(world), low: grp(world), nx, nz };
 
@@ -58,7 +59,7 @@ export function construireMonde(scene) {
     for (const hr of holes) { const h = new THREE.Path(); rectPath(h, hr); shape.holes.push(h); }
     const top = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 1 }),
       [new THREE.MeshStandardMaterial({ color: '#7dc35b', roughness: .95 }), mat('#8a5a33')]);
-    top.rotation.x = -Math.PI / 2; top.position.y = -depth; finish(top, parent);
+    top.rotation.x = -Math.PI / 2; top.position.y = -depth; finish(top, parent); top.userData.noCollide = true;
     const K = 8, rings = [];
     for (let k = 0; k < K; k++) {
       const ring = [];
@@ -84,7 +85,7 @@ export function construireMonde(scene) {
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
     geo.computeVertexNormals();
-    finish(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: .95, side: THREE.DoubleSide })), parent);
+    finish(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: .95, side: THREE.DoubleSide })), parent).userData.noCollide = true;
   }
   floatingRock(world, edgeR, .65, 12.5, N, [forgeHole], 11, [1.2, -.6]);
 
@@ -94,7 +95,7 @@ export function construireMonde(scene) {
     const h = new THREE.Path(); rectPath(h, forgeHole); s.holes.push(h);
     const tex = tileTex('#efe7da', '#e6dccb'); tex.repeat.set(.5, .5);
     const m = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: Y0, bevelEnabled: false }), [new THREE.MeshStandardMaterial({ map: tex, roughness: .8 }), mat('#cbbfae')]);
-    m.rotation.x = -Math.PI / 2; finish(m, world);
+    m.rotation.x = -Math.PI / 2; finish(m, world); m.userData.noCollide = true;
   }
 
   /* ================= Murs et salles ================= */
@@ -156,6 +157,27 @@ export function construireMonde(scene) {
         // décor accroché à cette façade (enseigne, étagères, horloge…) : il s'efface avec elle
         if (o.murs?.[k]) o.murs[k](gt);
       } else wallRun(g, axis, s0, s1, fixed, type, o, doors);
+    }
+    // portes qui s'ouvrent (touche E en visite) dans les cloisons vitrées et les murs du Coffre
+    for (const dr of (o.doors || [])) {
+      const type = s[dr.side];
+      if (!['part', 'glassTall', 'mid'].includes(type)) continue;   // muret et garde-corps : simple passage
+      const [axis, , , fixed] = runs[dr.side], gw = dr.w || 1.6, a = dr.off - gw / 2;
+      const h = type === 'mid' ? 1.42 : 2.1, L = gw - .04;
+      const pivot = axis === 'x' ? grp(g, a, 0, fixed) : grp(g, fixed, 0, a);
+      const Q = (pos, larg, hh, yy, m, ep) => axis === 'x' ? box(pivot, larg, hh, ep, pos, yy, 0, m) : box(pivot, ep, hh, larg, 0, yy, pos, m);
+      const cadre = o.cap || shade(o.accent, .12);
+      if (type === 'mid') {
+        Q(.02 + L / 2, L, h, 0, '#6b7280', .1); Q(.02 + L / 2, L * .7, .06, h * .6, '#eab308', .12);
+      } else {
+        Q(.02 + L / 2, L, .1, 0, cadre, .06); Q(.02 + L / 2, L, .08, h - .08, cadre, .06); Q(.02 + L / 2, L, h - .18, .1, glassMat, .03);
+        Q(.05, .06, h, 0, DARK, .07); Q(L - .01, .06, h, 0, DARK, .07);
+        Q(L - .2, .04, .25, 1.0, '#e5e7eb', .12);   // poignée
+      }
+      pivot.traverse(c => { c.userData.keep = true; c.castShadow = false; });
+      pivot.userData.noCollide = true;
+      const sens = { n: 1, s: -1, w: -1, e: 1 }[dr.side];          // la porte s'ouvre vers le couloir
+      portes.push({ pivot, axe: 'y', ouvert: sens * Math.PI / 2, angle: 0, ouverte: false, axis, largeur: L, hauteur: h, yBas: 0, zone: o.id, side: dr.side });
     }
     if (o.fill) o.fill(grp(g));
     if (o.label) etiquette(o.label, o.accent, o.x + (o.labelDx || 0), y + (o.labelY || 3.6), o.z + (o.labelDz || 0), o.parent || world);
@@ -356,7 +378,7 @@ export function construireMonde(scene) {
       beamW.rotation.z = -Math.PI / 2; beamW.scale.set(1.75 * .98, 1, 4.8 * .98);
       const bm = new THREE.Mesh(new THREE.CylinderGeometry(.04, Math.SQRT1_2, len, 4, 1, true),
         new THREE.MeshBasicMaterial({ color: '#fff5d6', transparent: true, opacity: .08, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, side: THREE.DoubleSide }));
-      bm.rotation.y = Math.PI / 4; bm.castShadow = false; beamW.add(bm);
+      bm.rotation.y = Math.PI / 4; bm.castShadow = false; beamW.add(bm); beamW.userData.noCollide = true;
       poste(g, 3.5, -2.6, -Math.PI / 2, 'thumbs', ag.joss, A(P.montage.couleur, 0, '#f59e0b', 'short'));
       poste(g, 3.5, -.4, -Math.PI / 2, 'video', ag.clara, A(P.montage.couleur, 4, '#111111', 'long'), { triple: true, w: 1.9 });
       poste(g, 3.5, 1.9, -Math.PI / 2, 'wave', ag.milo, A(P.montage.couleur, 1, '#222222', 'short', { phones: true }));
@@ -377,7 +399,8 @@ export function construireMonde(scene) {
       const st = '#8a8178';
       box(g, w, D, .25, 0, -D, -d / 2 + .125, st); box(g, w, D, .25, 0, -D, d / 2 - .125, st);
       box(g, .25, D, d - .5, -w / 2 + .125, -D, 0, st); box(g, .25, D, d - .5, w / 2 - .125, -D, 0, st);
-      for (let i = 0; i < 10; i++) box(g, 1.1, D - (i + 1) * .2, .38, 2.7, -D, -d / 2 + .44 + i * .38, '#a09588');
+      // escalier : pas d'obstacle, c'est la hauteur du sol (fonction sol) qui le fait monter et descendre
+      for (let i = 0; i < 10; i++) box(g, 1.1, D - (i + 1) * .2, .38, 2.7, -D, -d / 2 + .44 + i * .38, '#a09588').userData.noCollide = true;
       const p = grp(g, 0, -D, 0);
       const f = grp(p, -2.4, 0, -2.75); box(f, 1.3, 1.2, 1.1, 0, 0, 0, '#57534e'); box(f, .75, .5, .05, 0, .25, .56, glow('#fb923c'));
       box(f, .45, 3.8, .45, 0, 1.2, -.2, '#6b625a');
@@ -684,9 +707,13 @@ export function construireMonde(scene) {
       box(br, len, .05, .05, 0, .8, s * .75, '#7a4f2e');
       for (let x = -len / 2; x <= len / 2 + .01; x += len / 7) box(br, .07, .85, .07, x, -.05, s * .75, '#7a4f2e');
     }
-    const gate = grp(world, BX + .55, Y0, zc);   // barrière : aucun agent n'entre sans validation
+    const gate = grp(world, BX + .55, Y0, zc);   // barrière : aucun agent n'entre sans validation (E la lève en visite)
     for (const s of [-1, 1]) box(gate, .12, 1.2, .12, 0, 0, s * .85, '#eab308');
-    box(gate, .07, .12, 1.6, 0, .85, 0, glow('#ef4444'));
+    const barre = grp(gate, 0, .91, -.8);
+    box(barre, .07, .12, 1.6, 0, -.06, .8, glow('#ef4444'));
+    barre.traverse(c => { c.userData.keep = true; c.castShadow = false; });
+    barre.userData.noCollide = true;
+    portes.push({ pivot: barre, axe: 'x', ouvert: -1.35, angle: 0, ouverte: false, axis: 'z', largeur: 1.6, hauteur: .12, yBas: -.06, zone: 'coffre', barriere: true });
   }
 
   /* ================= Bordure de l'île : sapins, rochers, pierres, buissons et fleurs (kit Kenney) ================= */
@@ -728,5 +755,23 @@ export function construireMonde(scene) {
   }
   animate(clouds, (t, dt) => { clouds.rotation.y += dt * .012; clouds.position.y = Math.sin(t * .4) * .6; });
 
-  return { world, facade, zones, islet };
+  /* ================= Hauteur du sol à un endroit (pour marcher en visite) =================
+     Renvoie la hauteur du sol en (x, z), ou null s'il n'y a rien (le vide autour de l'île). */
+  const x1Pont = ISLET.x - 2.45;
+  function sol(x, z) {
+    if (Math.hypot(x - ISLET.x, z - ISLET.z) < 4.1) return ISLET.y + .05;            // îlot du Coffre
+    if (Math.abs(x) <= BX + .1 && Math.abs(z) <= BZ + .1) {
+      const lx = x - FORGE.x, lz = z - FORGE.z;
+      if (Math.abs(lx) < FORGE.w / 2 && Math.abs(lz) < FORGE.d / 2) {                  // la Forge, en contrebas
+        if (lx > 2.1 && lx < 3.3) return Y0 - 2 * THREE.MathUtils.clamp((lz + 3.5) / 3.8, 0, 1);   // son escalier
+        return Y0 - 2;
+      }
+      return Y0;                                                                          // le bureau
+    }
+    if (x > BX && x < x1Pont + .3 && Math.abs(z - ISLET.z) < .7) return THREE.MathUtils.lerp(Y0, ISLET.y + .05, (x - BX) / (x1Pont - BX));   // le pont
+    if (Math.hypot(x, z) < edgeR(Math.atan2(z, x)) - .35) return 0;                        // l'herbe autour du bureau
+    return null;
+  }
+
+  return { world, facade, zones, islet, portes, sol };
 }

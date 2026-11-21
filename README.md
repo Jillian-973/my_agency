@@ -19,6 +19,7 @@ Puis ouvrir <http://127.0.0.1:8787>. Autre port : `$env:PORT=9000; node live/ser
 - **Caméra** : elle tourne lentement autour de l'île ; clic gauche pour pivoter, molette ou pincement pour zoomer, clic droit, ZQSD ou flèches pour se déplacer, Échap pour revenir à la vue d'ensemble.
 - **Pôles** : un clic sur une salle (ou sur un pôle dans le panneau) fait voler la caméra jusqu'à elle et affiche la liste de ses agents.
 - **Agents** : chacun a son bureau et une étiquette au-dessus de la tête — prénom, poste et état (*au travail*, *en pause*, *en attente*).
+- **Visite à la première personne** : bouton « J'entre » (ou « J'entre dans cette salle » depuis la fiche d'un pôle, ou double-clic sur une salle). Z Q S D ou flèches pour marcher, Maj pour courir, la souris pour regarder, E pour ouvrir une porte (ou lever la barrière du pont), Échap pour rendre la souris, « Vue d'en haut » pour revenir au-dessus de l'île. On ne traverse ni les murs ni les meubles. Si le navigateur refuse de capturer la souris, on regarde en glissant avec le clic gauche.
 
 ## Organisation
 
@@ -31,6 +32,9 @@ site/              le QG (servi tel quel)
   js/monde.js      l'île, le bâtiment, les salles et leur contenu
   js/mobilier.js   meubles, personnages et mascottes
   js/etiquettes.js étiquettes des salles et des agents
+  js/details.js    petits objets : tasses, livres, lampes, enseignes des pôles…
+  js/visite.js     visite à la première personne (marche, regard, portes)
+  js/collisions.js murs et meubles qu'on ne traverse pas
   js/modeles.js    chargement des modèles Kenney
   js/outils.js     matériaux, formes et textures communes
   js/main.js       caméra, interactions, optimisation, boucle d'affichage
@@ -47,7 +51,7 @@ EQUIPE.md          les pôles, les agents, les lieux et les mascottes
 1. ~~Maquettes à valider~~
 2. ~~L'île en 3D, caméra qui tourne, clic sur un pôle pour y voler~~
 3. ~~Étiquette au-dessus de chaque agent : prénom, poste, état~~
-4. Bouton « J'entre » : marcher à la première personne et ouvrir les portes
+4. ~~Bouton « J'entre » : marcher à la première personne et ouvrir les portes~~
 5. Parler à un agent et lui confier une tâche qui lance une vraie session Claude Code (en local uniquement)
 6. Brancher certains agents sur mes outils
 

@@ -60,7 +60,40 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 #fps { position: fixed; bottom: 14px; right: 16px; font: 11px ui-monospace, monospace; color: #334155; background: rgba(255, 255, 255, .6);
   padding: 3px 7px; border-radius: 6px; }
 
+/* boutons principaux (J'entre, Vue d'en haut…) */
+button.principal { background: var(--or) !important; color: #fff; }
+.actions { flex-wrap: wrap; }
+#fiche .entrer { margin-top: 10px; width: 100%; border: 0; padding: 8px 10px; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+
+/* consignes selon le mode */
+.consigne-visite { display: none; }
+body.en-visite .consigne-haut, body.en-visite .aide, body.en-visite #entrer { display: none; }
+body.en-visite .consigne-visite { display: block; }
+
+/* visite à la première personne */
+#visite { position: fixed; inset: 0; pointer-events: none; }
+#visite .viseur { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%;
+  background: rgba(255, 255, 255, .9); box-shadow: 0 0 0 2px rgba(15, 23, 42, .35); }
+#invite { position: absolute; left: 50%; top: calc(50% + 34px); transform: translateX(-50%); background: rgba(15, 23, 42, .78); color: #fff;
+  font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 999px; white-space: nowrap; }
+#visite .haut { position: absolute; top: 16px; right: 16px; pointer-events: auto; border: 0; padding: 8px 14px; border-radius: 10px;
+  font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: var(--ombre); }
+.aide-visite { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #fff; background: rgba(15, 23, 42, .6);
+  padding: 6px 12px; border-radius: 999px; white-space: nowrap; max-width: calc(100vw - 200px); overflow: hidden; text-overflow: ellipsis; }
+.si-glisser { display: none; }
+#visite.glisser .si-glisser { display: inline; }
+#visite.glisser .si-capture { display: none; }
+#reprendre { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(15, 23, 42, .35); z-index: 8; cursor: pointer; }
+#reprendre[hidden] { display: none; }
+#reprendre .carte { background: var(--verre); backdrop-filter: blur(6px); border-radius: 14px; padding: 16px 20px; box-shadow: var(--ombre);
+  text-align: center; display: grid; gap: 8px; cursor: default; min-width: 240px; }
+#reprendre .carte p { margin: 0; font-size: 13px; color: var(--doux); }
+#reprendre .carte p b { color: var(--encre); font-size: 15px; }
+#reprendre .carte button { border: 0; padding: 8px 12px; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  background: rgba(15, 23, 42, .08); color: var(--encre); }
+
 @media (max-width: 640px) {
+  .aide-visite { display: none; }
   .aide { display: none; }
   .panneau { width: auto; right: 16px; }
   #fiche { bottom: 40px; }

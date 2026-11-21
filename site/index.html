@@ -23,9 +23,11 @@
 
 <aside class="panneau">
   <h1>JILL KORP · le QG</h1>
-  <p>Clique sur un pôle (ou sur une salle) pour y voler.</p>
+  <p class="consigne-haut">Clique sur un pôle pour y voler, double-clique pour y entrer.</p>
+  <p class="consigne-visite">Clique sur un pôle pour t'y rendre directement.</p>
   <nav id="legende" aria-label="Aller vers un pôle"></nav>
   <div class="actions">
+    <button id="entrer" class="principal" type="button">J'entre</button>
     <button id="ensemble" type="button">Vue d'ensemble</button>
     <a href="mentions.html">Mentions</a>
   </div>
@@ -37,10 +39,27 @@
   <p class="pole"></p>
   <ul></ul>
   <p class="vide">Personne ne travaille ici en ce moment.</p>
+  <button class="entrer principal" type="button">J'entre dans cette salle</button>
 </section>
 
+<!-- visite à la première personne -->
+<div id="visite" hidden>
+  <div class="viseur" aria-hidden="true"></div>
+  <div id="invite" hidden></div>
+  <button class="haut principal" type="button" data-haut>Vue d'en haut</button>
+  <div class="aide-visite"><span class="si-capture">Z Q S D ou flèches : marcher · Maj : courir · souris : regarder · E : ouvrir une porte · Échap : rendre la souris</span><span class="si-glisser">Z Q S D ou flèches : marcher · Maj : courir · glisser avec la souris : regarder · E : ouvrir une porte</span></div>
+</div>
+<div id="reprendre" hidden>
+  <div class="carte">
+    <p><b>Visite en pause</b></p>
+    <p>La souris est libre.</p>
+    <button type="button" class="principal" data-reprendre>Reprendre la visite</button>
+    <button type="button" data-haut>Vue d'en haut</button>
+  </div>
+</div>
+
 <div id="survol" hidden></div>
-<div class="aide">Clic gauche : tourner · molette ou pincer : zoom · clic droit, ZQSD ou flèches : se déplacer · Échap : vue d'ensemble</div>
+<div class="aide">Clic gauche : tourner · molette ou pincer : zoom · clic droit, ZQSD ou flèches : se déplacer · double-clic : entrer · Échap : vue d'ensemble</div>
 <div id="fps"></div>
 
 <script type="module" src="js/main.js"></script>
