@@ -142,7 +142,7 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
         coche.addEventListener('change', () => { if (coche.checked) coches.add(pose); else coches.delete(pose); dessinerEquipe(); });
         const b = document.createElement('button'); b.type = 'button'; b.className = 'agent'; b.dataset.cle = 'b-' + a.id;
         b.title = t ? `Suivre la tâche de ${a.prenomEquipe || a.prenom}` : `Parler à ${a.prenomEquipe || a.prenom}`;
-        b.addEventListener('click', () => parler(pose));
+        b.addEventListener('click', () => { ouvrir(null); parler(pose); });
         const etat = t ? 'au travail' : a.etat;
         const dot = document.createElement('i'); dot.style.background = (ETATS[etat] || ETATS['en attente']).couleur;
         const nom = document.createElement('b'); nom.textContent = a.prenom;

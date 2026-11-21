@@ -18,22 +18,25 @@ export function creerVisite({ canvas, collisions, sol, portes, agents = [], parl
   const verrouillee = () => document.pointerLockElement === canvas;
   // Si le navigateur refuse de capturer la souris (certains volets intégrés le font), on passe en mode
   // « glisser » : on regarde autour de soi en maintenant le clic gauche et en déplaçant la souris.
-  let glisser = false;
+  let glisser = false, douce = false;
   function passerEnGlisser() { glisser = true; ui.reprendre.hidden = true; ui.hud.classList.add('glisser'); }
-  function verrouiller() {
+  /** Capturer la souris. douce : simple essai (après une discussion fermée avec Échap, le navigateur peut refuser) ;
+   *  un refus ne fait alors rien de visible : on marche déjà au clavier, et un clic dans la vue reprendra la souris. */
+  function verrouiller(essai = false) {
     if (!etat.actif || verrouillee() || glisser) return;
+    douce = essai;
     const r = canvas.requestPointerLock?.();
     if (!r) { if (!canvas.requestPointerLock) passerEnGlisser(); return; }
-    if (r.catch) r.catch(() => { if (etat.actif) passerEnGlisser(); });
+    if (r.catch) r.catch(() => { if (etat.actif && !douce) passerEnGlisser(); douce = false; });
   }
   let etaitVerrouillee = false;
   document.addEventListener('pointerlockchange', () => {
     if (!etat.actif) return;
-    if (verrouillee()) { etaitVerrouillee = true; ui.reprendre.hidden = true; return; }
+    if (verrouillee()) { etaitVerrouillee = true; douce = false; ui.reprendre.hidden = true; return; }
     appuis.clear();
     if (etaitVerrouillee) ui.reprendre.hidden = false;      // Échap : la souris est rendue, visite en pause
   });
-  document.addEventListener('pointerlockerror', () => { if (etat.actif) passerEnGlisser(); });
+  document.addEventListener('pointerlockerror', () => { if (etat.actif && !douce) passerEnGlisser(); douce = false; });
   const regarder = (dx, dy) => {
     etat.lacet -= dx * SENSI;
     etat.tangage = THREE.MathUtils.clamp(etat.tangage - dy * SENSI, -1.45, 1.45);
@@ -161,8 +164,8 @@ export function creerVisite({ canvas, collisions, sol, portes, agents = [], parl
     appuis.clear(); tire = null; etaitVerrouillee = false;
     if (verrouillee()) document.exitPointerLock();
   }
-  /** Reprendre la souris après la fermeture de cette fenêtre (appelé depuis un clic ou une touche). */
-  function reprendre() { if (etat.actif) { ui.reprendre.hidden = true; verrouiller(); } }
+  /** Après une discussion : on peut remarcher tout de suite, sans carte « Visite en pause » ; la souris est reprise si le navigateur l'accepte. */
+  function reprendre() { if (etat.actif) { appuis.clear(); ui.reprendre.hidden = true; verrouiller(true); } }
   function redimensionner() { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
   addEventListener('resize', redimensionner);
 

@@ -541,7 +541,7 @@ boutonsGraphismes.forEach(b => b.addEventListener('click', () => {
 reglerGraphismes(graphismes.niveau());
 
 // accès pratique depuis la console du navigateur (débogage)
-window.qg = { scene, camera, controls, zones, agents: agentsPoses, portes, allerVers, vueEnsemble, entrerDans, vueDuHaut, visite, graphismes, renderer, onglets, reunion, foule, fous, marche, chemins, collisions, sol: hauteurSol };
+window.qg = { scene, camera, controls, zones, agents: agentsPoses, portes, allerVers, vueEnsemble, entrerDans, vueDuHaut, visite, parler: (pose) => parlerA(pose), graphismes, renderer, onglets, reunion, foule, fous, marche, chemins, collisions, sol: hauteurSol };
 
 /* ================= Boucle ================= */
 const clock = new THREE.Clock();

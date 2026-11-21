@@ -68,6 +68,8 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {} }) {
   }
   function fermer() {
     if (racine.hidden) return;
+    // le curseur de saisie ne doit pas rester dans la fenêtre fermée : sinon les touches de marche y seraient tapées
+    if (racine.contains(document.activeElement)) document.activeElement.blur();
     racine.hidden = true; actuel = null;
     quandFermee();
   }
