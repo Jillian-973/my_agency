@@ -41,10 +41,12 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
     fiche: $('.vue-fiche'), portrait: $('.portrait'), lieu: $('.lieu'), activite: $('.activite'), detail: $('.maintenant .detail'),
     suivreTache: $('.suivre'), missions: $('.missions'), puces: $('.outils-agent .puces'), notePuces: $('.note-puces'),
     equipe: $('.equipe-agent'), collegues: $('.collegues'), retour: $('.retour'),
+    modele: $('.identite .modele'), noteDiscussion: $('.note-discussion'),
   };
   const discussions = new Map();   // id de l'agent → messages (en mémoire seulement, rien n'est enregistré)
   const taches = new Map();        // id de l'agent → { id, journal, fin }
   let actuel = null, onglet = null, claudeOk = true, connecteurs = {};   // connecteurs : id EQUIPE.md → noms des connecteurs
+  let modeles = {}, modeleDiscussion = '';                     // modèle et plafond de chaque agent (live/modeles.js)
 
   const idEquipe = (a) => a.idEquipe || a.id;               // identifiant dans EQUIPE.md (le CEO s'y appelle Jillian)
   const prenomDe = (a) => a.prenomEquipe || a.prenom;
@@ -60,6 +62,10 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
     const lieu = pose && nomDuLieu(pose.zone);
     ui.lieu.textContent = lieu ? `Travaille à : ${lieu}` : '';
     ui.lieu.hidden = !lieu;
+    const m = modeles[idEquipe(agent)];
+    ui.modele.textContent = m ? `Modèle : ${m.nom} · ${m.plafond} $ au plus par tâche` : '';
+    ui.modele.hidden = !m;
+    ui.noteDiscussion.textContent = `Réponse${modeleDiscussion ? ` de ${modeleDiscussion}` : ''}, sans aucun outil. Rien n'est enregistré : la discussion s'efface en rechargeant la page.`;
     // son rôle : missions, outils (● branché quand c'est un de ses connecteurs), collègues de pôle
     const missions = agent.missions && agent.missions.length ? agent.missions : [agent.poste];
     ui.missions.replaceChildren(...missions.map(m => { const li = document.createElement('li'); li.textContent = majuscule(m); return li; }));
@@ -120,8 +126,8 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
     ui.pole.textContent = agent.pole ? `Pôle ${POLES[agent.pole].nom}` : 'Quartier Général';
     ui.consigne.placeholder = `Ce que ${prenomDe(agent)} doit faire, avec le plus de détails possible…`;
     ui.saisie.placeholder = `Écris à ${prenomDe(agent)}…`;
-    const cnx = connecteurs[idEquipe(agent)];
-    ui.noteTache.textContent = `Session Claude Code, modèle Sonnet, 2 $ maximum. ${prenomDe(agent)} peut lire, écrire et modifier les fichiers de son dossier live/travaux/${prenomDe(agent)}/ et chercher sur le web` +
+    const cnx = connecteurs[idEquipe(agent)], m = modeles[idEquipe(agent)];
+    ui.noteTache.textContent = `Session Claude Code${m ? `, modèle ${m.nom}, ${m.plafond} $ maximum` : ''}. ${prenomDe(agent)} peut lire, écrire et modifier les fichiers de son dossier live/travaux/${prenomDe(agent)}/ et chercher sur le web` +
       (cnx ? `, avec ses connecteurs : ${cnx.join(', ')} (seulement les outils prévus pour son poste, jamais d'envoi).` : ", rien d'autre.") + ' 4 tâches en même temps au plus.';
     majEtat();
     const t = taches.get(agent.id);
@@ -135,6 +141,7 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
     // ce que fait l'agent d'après le serveur (une tâche lancée depuis un autre onglet, par exemple)
     if (!SANS_SERVEUR) appeler('/api/etat').then((etat) => {
       enCoursServeur = etat.enCours || []; connecteurs = etat.connecteurs || connecteurs;
+      modeles = etat.modeles || modeles; modeleDiscussion = etat.discussion || modeleDiscussion;
       if (actuel === agent && !onglet) dessinerFiche();
     }).catch(() => {});
   }
@@ -332,6 +339,7 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
     appeler('/api/etat').then((etat) => {
       claudeOk = !!etat.claude;
       connecteurs = etat.connecteurs || {};
+      modeles = etat.modeles || {}; modeleDiscussion = etat.discussion || '';
       for (const { id, agent } of etat.enCours || []) {
         const pose = agentsPoses.find(p => idEquipe(p.agent) === agent);
         if (pose && !taches.has(pose.agent.id)) suivre(pose.agent.id, id);

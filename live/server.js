@@ -28,13 +28,14 @@ const ROOT = path.join(RACINE, 'site');
 const TRAVAUX = path.join(__dirname, 'travaux');
 const EQUIPE_MD = path.join(RACINE, 'EQUIPE.md');
 
-const BUDGET_TACHE = 2;            // dollars par tâche
+// plafond par tâche : selon le modèle de l'agent (live/modeles.js : Haiku 1 $, Sonnet 2 $, Opus 4 $)
 const BUDGET_DISCUSSION = 0.25;    // dollars par réponse en discussion
 const TACHES_MAX = 4;              // tâches en même temps
 const DUREE_MAX_TACHE = 30 * 60e3; // une tâche est arrêtée au bout de 30 minutes
 const OUTILS_TACHE = ['Read', 'Write', 'Edit', 'WebSearch', 'WebFetch'];
 const BUDGET_CORBEILLE = 0.5;      // dollars pour mettre à la corbeille les mails que tu as validés
 const CNX = require('./connecteurs.js');
+const MOD = require('./modeles.js');
 const OUTILS = require('./outils-mcp.js');
 
 // Jeton secret, recréé à chaque démarrage : il est glissé dans la page du QG et exigé par l'API.
@@ -112,7 +113,7 @@ function discuter(agent, messages) {
       'Réponds en quelques phrases, sans titres ni listes longues.';
     const fil = messages.map(m => `${m.role === 'agent' ? agent.prenom : 'Moi'} : ${m.texte}`).join('\n\n');
     const consigne = `Voici notre discussion jusqu'ici :\n\n${fil}\n\nRéponds au dernier message, en tant que ${agent.prenom}.`;
-    const args = ['-p', '--model', 'sonnet', ...COMMUNES, '--tools', '', '--no-session-persistence',
+    const args = ['-p', '--model', MOD.DISCUSSION.id, ...COMMUNES, '--tools', '', '--no-session-persistence',
       '--max-budget-usd', String(BUDGET_DISCUSSION), '--output-format', 'json', '--system-prompt', systeme];
     const enfant = spawn(CLAUDE, args, { cwd: dossier, windowsHide: true });
     let sortie = '', erreurs = '';
@@ -172,7 +173,9 @@ function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null } = 
     derniere: null };
   taches.set(id, t);
   if (taches.size > 50) for (const [k, v] of taches) { if (v.etat !== 'en cours') { taches.delete(k); break; } }
-  const budgetMax = mode === 'corbeille' ? BUDGET_CORBEILLE : BUDGET_TACHE;
+  // modèle de l'agent (live/modeles.js) et son plafond ; la corbeille, simple application d'une liste, passe par Haiku
+  const modele = mode === 'corbeille' ? MOD.CORBEILLE : MOD.modeleDe(agent.id);
+  const budgetMax = mode === 'corbeille' ? BUDGET_CORBEILLE : modele.plafond;
   diffuser(t, { type: 'debut', prenom: agent.prenom });
   demarrer().catch((e) => terminer({ erreur: `Impossible de lancer Claude Code : ${e.message}` }));
 
@@ -185,7 +188,7 @@ function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null } = 
     const fin = ['--permission-mode', 'acceptEdits', '--max-budget-usd', String(budgetMax), '--output-format', 'stream-json', '--verbose'];
     let args, env = process.env;
     if (!avecConnecteurs) {
-      args = ['-p', '--model', 'sonnet', ...COMMUNES, '--tools', OUTILS_TACHE.join(','), '--allowedTools', OUTILS_TACHE.join(','), ...fin];
+      args = ['-p', '--model', modele.id, ...COMMUNES, '--tools', OUTILS_TACHE.join(','), '--allowedTools', OUTILS_TACHE.join(','), ...fin];
     } else {
       diffuser(t, { type: 'info', texte: 'Branchement des connecteurs…' }); t.derniere = 'Branchement des connecteurs…';
       const d = await CNX.decouvrir(CLAUDE);
@@ -199,7 +202,7 @@ function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null } = 
       }
       const outilsFichiers = mode === 'corbeille' ? [] : OUTILS_TACHE;
       // sans --strict-mcp-config : la session charge tes connecteurs claude.ai ; --disallowedTools les cache tous sauf les outils prévus
-      args = ['-p', '--model', 'sonnet', '--restricted', '--disable-slash-commands', '--tools', outilsFichiers.join(','),
+      args = ['-p', '--model', modele.id, '--restricted', '--disable-slash-commands', '--tools', outilsFichiers.join(','),
         '--allowedTools', [...outilsFichiers, ...r.autorises].join(','), '--disallowedTools', r.interdits.join(','), ...fin];
       env = { ...process.env, MCP_CONNECTION_NONBLOCKING: 'false' };   // attendre que les connecteurs soient branchés avant de commencer
     }
@@ -319,7 +322,9 @@ async function api(req, res, url) {
 
   if (req.method === 'GET' && p === '/api/etat') {
     const connecteurs = Object.fromEntries(Object.keys(EQUIPE).filter(CNX.aDesConnecteurs).map(id => [id, CNX.connecteursDe(id)]));
-    return json(res, 200, { claude: !!CLAUDE, enCours: enCours().map(t => ({ id: t.id, agent: t.agent, mode: t.mode, debut: t.debut, resume: t.resume, derniere: t.derniere })), max: TACHES_MAX, connecteurs, actifs: OUTILS.usagesActifs() });
+    return json(res, 200, { claude: !!CLAUDE, enCours: enCours().map(t => ({ id: t.id, agent: t.agent, mode: t.mode, debut: t.debut, resume: t.resume, derniere: t.derniere })), max: TACHES_MAX, connecteurs, actifs: OUTILS.usagesActifs(),
+      modeles: Object.fromEntries(Object.keys(EQUIPE).map(id => { const m = MOD.modeleDe(id); return [id, { nom: m.nom, plafond: m.plafond }]; })),
+      discussion: MOD.DISCUSSION.nom });
   }
 
   // onglet « Outils » : nom et état de chaque connecteur (claude mcp list), jamais d'adresse, de commande ni d'erreur
