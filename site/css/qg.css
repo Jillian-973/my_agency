@@ -231,8 +231,29 @@ body.en-visite #onglets, body.en-visite .tiroir { display: none; }
 #tiroir-equipe .sifflet:not(:disabled):hover svg { animation: siffle .35s ease-in-out 2; }
 @keyframes siffle { 50% { transform: rotate(-12deg) scale(1.1); } }
 
+/* Outils : connecteurs regroupés, deux colonnes de pastilles */
+#onglets .alerte { min-width: 17px; height: 17px; padding: 0 5px; border-radius: 999px; display: inline-grid; place-items: center; font-size: 10.5px; background: #ef4444; color: #fff; }
+#tiroir-outils { width: min(620px, calc(100vw - 28px)); max-height: min(62vh, calc(100vh - 140px)); display: flex; flex-direction: column; }
+#tiroir-outils .tete { display: flex; align-items: center; gap: 10px; margin: 0 2px 8px; }
+#tiroir-outils .resume { flex: 1; margin: 0; font-size: 12px; color: var(--doux); }
+#tiroir-outils .verifier { flex: none; padding-left: 14px; padding-right: 14px; }
+#tiroir-outils .verifier:disabled { opacity: .6; cursor: var(--curseur); transform: none; }
+#tiroir-outils .defile { overflow: auto; min-height: 0; flex: 1; margin: 0 -6px; padding: 0 6px 2px; }
+#tiroir-outils h3 { margin: 10px 2px 5px; font: 600 11px/1 var(--texte); letter-spacing: .06em; text-transform: uppercase; color: var(--doux); }
+#tiroir-outils section:first-child h3 { margin-top: 2px; }
+#tiroir-outils ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px; }
+#tiroir-outils li { display: grid; grid-template-columns: 9px 1fr auto; align-items: center; gap: 7px; padding: 6px 9px; border-radius: 6px;
+  border: 1px solid rgba(43, 47, 69, .1); background: rgba(255, 255, 255, .55); font-size: 12px; }
+#tiroir-outils li i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255, 255, 255, .85); }
+#tiroir-outils li b { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#tiroir-outils li span { font-size: 11px; color: var(--doux); white-space: nowrap; }
+#tiroir-outils li.etat-ok { border-color: rgba(34, 197, 94, .4); background: rgba(240, 253, 244, .8); }
+#tiroir-outils li.etat-en-panne { border-color: rgba(239, 68, 68, .45); background: rgba(254, 242, 242, .85); }
+#tiroir-outils li.etat-en-panne span { color: #b91c1c; font-weight: 600; }
+#tiroir-outils .note { margin: 8px 2px 0; font-size: 11px; color: var(--doux); }
+
 /* tiroir ouvert : la fiche de la salle monte au-dessus de « Pôles », et s'efface derrière « Équipe » */
-body[data-tiroir="equipe"] #fiche { display: none; }
+body[data-tiroir="equipe"] #fiche, body[data-tiroir="outils"] #fiche { display: none; }
 @media (max-width: 1260px) { body[data-tiroir="poles"] #fiche { bottom: 192px; max-height: calc(100vh - 400px); } }
 
 #fps { position: fixed; bottom: 12px; right: 14px; font-family: var(--texte); font-size: 11px; font-variant-numeric: tabular-nums; padding: 4px 9px; border-radius: 6px; }

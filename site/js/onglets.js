@@ -1,5 +1,7 @@
 // Onglets discrets en bas de l'écran :
 // - « Pôles » : parcourir chaque pôle puis chaque lieu commun, un par un (la caméra y vole, la fiche de la salle s'ouvre) ;
+// - « Outils » : le nom de chacun de tes connecteurs et s'il marche (le serveur lit « claude mcp list » et ne
+//   transmet que le nom et un état parmi quelques mots fixes : ni adresse, ni commande, ni message d'erreur) ;
 // - « Équipe » : ce que fait chaque agent en ce moment. Les tâches en cours viennent du serveur local (/api/etat) ;
 //   pour les autres agents, c'est leur situation habituelle (donnees.js). On y coche aussi des agents, et le sifflet
 //   les appelle en réunion (reunion.js).
@@ -30,7 +32,7 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
   const $ = (s, r = document) => r.querySelector(s);
   const barre = $('#onglets');
   const boutons = [...barre.querySelectorAll('[data-tiroir]')];
-  const tiroirs = { poles: $('#tiroir-poles'), equipe: $('#tiroir-equipe') };
+  const tiroirs = { poles: $('#tiroir-poles'), equipe: $('#tiroir-equipe'), outils: $('#tiroir-outils') };
   let ouvert = null;
 
   function ouvrir(nom) {
@@ -41,6 +43,7 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
     if (nom) document.body.dataset.tiroir = nom; else delete document.body.dataset.tiroir;
     if (nom === 'poles') ouvrirPoles();
     if (nom === 'equipe') { dessinerEquipe(); rafraichir(); }
+    if (nom === 'outils') chargerOutils(false);
   }
   boutons.forEach(b => b.addEventListener('click', () => ouvrir(b.dataset.tiroir)));
   for (const t of Object.values(tiroirs)) $('.fermer', t).addEventListener('click', () => ouvrir(null));
@@ -209,6 +212,63 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
     minuteur = setTimeout(rafraichir, ouvert === 'equipe' && !document.hidden ? PAUSE_OUVERT : PAUSE_FERME);
   }
   rafraichir();
+
+  /* ---------- Outils : mes connecteurs et leur état ---------- */
+  const to = tiroirs.outils, groupesOutils = $('.groupes', to), resumeOutils = $('.resume', to), verifier = $('.verifier', to), alerte = $('.alerte', barre);
+  const ETATS_OUTIL = {
+    ok: { texte: 'connecté', couleur: '#22c55e', ordre: 0 },
+    'en-panne': { texte: 'en panne', couleur: '#ef4444', ordre: 1 },
+    'a-connecter': { texte: 'à connecter', couleur: '#f59e0b', ordre: 2 },
+    'non-configure': { texte: 'non configuré', couleur: '#94a3b8', ordre: 3 },
+    inconnu: { texte: 'état inconnu', couleur: '#94a3b8', ordre: 4 },
+  };
+  const titreGroupe = (g) => (g === 'claude.ai' ? 'Connecteurs claude.ai' : g === 'local' ? 'Sur cet ordinateur' : g.replace(/^extension /, 'Extension « ') + (g.startsWith('extension ') ? ' »' : ''));
+  const rangGroupe = (g) => (g === 'claude.ai' ? 0 : g === 'local' ? 2 : 1);
+  let outils = null, chargement = null;
+  function dessinerOutils() {
+    if (!outils) return;
+    const liste = outils.connecteurs || [];
+    const n = (e) => liste.filter(c => c.etat === e).length;
+    const panne = n('en-panne');
+    alerte.textContent = panne || ''; alerte.hidden = !panne; alerte.title = panne ? `${panne} connecteur${panne > 1 ? 's' : ''} en panne` : '';
+    if (ouvert !== 'outils') return;
+    if (outils.echec) { resumeOutils.textContent = 'Impossible de lire l\'état de tes connecteurs pour le moment.'; groupesOutils.replaceChildren(); return; }
+    const morceaux = [[n('ok'), 'connecté', 'connectés'], [panne, 'en panne', 'en panne'], [n('a-connecter'), 'à connecter', 'à connecter'], [n('non-configure'), 'non configuré', 'non configurés']]
+      .filter(([k]) => k).map(([k, un, plusieurs]) => `${k} ${k > 1 ? plusieurs : un}`);
+    const h = new Date(outils.date);
+    resumeOutils.textContent = (morceaux.join(' · ') || 'Aucun connecteur') + ` — vérifié à ${String(h.getHours()).padStart(2, '0')} h ${String(h.getMinutes()).padStart(2, '0')}`;
+    const parGroupe = new Map();
+    for (const c of liste) { if (!parGroupe.has(c.groupe)) parGroupe.set(c.groupe, []); parGroupe.get(c.groupe).push(c); }
+    const groupesTries = [...parGroupe.keys()].sort((a, b) => rangGroupe(a) - rangGroupe(b) || a.localeCompare(b, 'fr'));
+    groupesOutils.replaceChildren(...groupesTries.map(g => {
+      const sec = document.createElement('section');
+      const t = document.createElement('h3'); t.textContent = titreGroupe(g);
+      const ul = document.createElement('ul');
+      const items = parGroupe.get(g).sort((a, b) => (ETATS_OUTIL[a.etat] || ETATS_OUTIL.inconnu).ordre - (ETATS_OUTIL[b.etat] || ETATS_OUTIL.inconnu).ordre || a.nom.localeCompare(b.nom, 'fr'));
+      for (const c of items) {
+        const e = ETATS_OUTIL[c.etat] || ETATS_OUTIL.inconnu;
+        const li = document.createElement('li'); li.className = 'etat-' + (ETATS_OUTIL[c.etat] ? c.etat : 'inconnu');
+        const i = document.createElement('i'); i.style.background = e.couleur;
+        const b = document.createElement('b'); b.textContent = c.nom; b.title = c.nom;
+        const s = document.createElement('span'); s.textContent = e.texte;
+        li.append(i, b, s); ul.append(li);
+      }
+      sec.append(t, ul);
+      return sec;
+    }));
+  }
+  async function chargerOutils(forcer) {
+    if (SANS_SERVEUR) { resumeOutils.textContent = 'Serveur local éteint : démarre le serveur du QG pour voir l\'état de tes connecteurs.'; return; }
+    if (chargement) return chargement;
+    if (!outils || forcer) { resumeOutils.textContent = forcer ? 'Vérification de tes connecteurs…' : 'Lecture de tes connecteurs…'; if (!outils) groupesOutils.replaceChildren(); }
+    verifier.disabled = true;
+    chargement = appeler('/api/outils' + (forcer ? '?verifier=1' : ''))
+      .then((r) => { outils = r; }, () => { outils = { date: Date.now(), connecteurs: [], echec: true }; })
+      .finally(() => { chargement = null; verifier.disabled = false; dessinerOutils(); });
+    return chargement;
+  }
+  verifier.addEventListener('click', () => chargerOutils(true));
+  if (!SANS_SERVEUR) setTimeout(() => chargerOutils(false), 3000);   // une première lecture discrète : l'onglet signale un connecteur en panne
 
   return { suivreZone, fermer: () => ouvrir(null), rafraichir, redessiner: () => dessinerEquipe() };
 }
