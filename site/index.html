@@ -79,19 +79,44 @@
   </div>
 </div>
 
-<!-- fenêtre d'un agent : discuter ou lui confier une tâche (Claude Code, en local) -->
+<!-- fiche d'un agent : qui il est, ce qu'il fait, son rôle au QG ; en bas, discuter ou lui confier une tâche (Claude Code, en local) -->
 <div id="agent" hidden>
   <section class="carte sf-cadre cadre-onglet" role="dialog" aria-modal="true" aria-labelledby="agent-titre">
     <h2 id="agent-titre" class="sf-entete"></h2>
     <button class="fermer sf-fermer" type="button" aria-label="Fermer la fenêtre de l'agent" title="Fermer">×</button>
     <div class="defile">
-    <p class="poste"></p>
-    <p class="qui"><i></i><span class="pole"></span><em class="etat"></em></p>
-    <div class="choix" role="tablist">
-      <button class="sf-bouton" type="button" role="tab" data-onglet="discuter">Discuter</button>
-      <button class="sf-bouton" type="button" role="tab" data-onglet="tache">Confier une tâche</button>
+    <div class="identite">
+      <div class="portrait"></div>
+      <div class="infos">
+        <p class="poste"></p>
+        <p class="qui"><i></i><span class="pole"></span><em class="etat"></em></p>
+        <p class="lieu"></p>
+      </div>
     </div>
     <p class="message" hidden></p>
+
+    <div class="vue-fiche">
+      <section class="maintenant">
+        <h3>En ce moment</h3>
+        <p class="activite"></p>
+        <p class="detail" hidden></p>
+        <button class="suivre sf-bouton gris" type="button" hidden>Suivre sa tâche</button>
+      </section>
+      <section class="role">
+        <h3>Son rôle au QG</h3>
+        <ul class="missions"></ul>
+      </section>
+      <section class="outils-agent">
+        <h3>Ses outils</h3>
+        <div class="puces"></div>
+        <p class="note-puces" hidden>● branché : il s'en sert pendant ses tâches, avec seulement les outils prévus pour son poste.</p>
+      </section>
+      <section class="equipe-agent">
+        <h3>Son équipe</h3>
+        <div class="collegues"></div>
+      </section>
+    </div>
+    <button class="retour" type="button" hidden>‹ Revenir à la fiche</button>
 
     <div class="onglet discuter" hidden>
       <ol class="fil" aria-live="polite"></ol>
@@ -130,6 +155,11 @@
         </div>
       </div>
     </div>
+    </div>
+    <!-- en bas de la fiche : discuter, ou lui confier une tâche -->
+    <div class="choix" role="tablist" aria-label="Que faire avec cet agent">
+      <button class="sf-bouton" type="button" role="tab" data-onglet="discuter">Discuter</button>
+      <button class="sf-bouton" type="button" role="tab" data-onglet="tache">Confier une tâche</button>
     </div>
   </section>
 </div>

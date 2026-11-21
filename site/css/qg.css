@@ -342,7 +342,34 @@ body.en-visite .consigne-visite { display: block; }
 #agent .qui i { width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 6px currentColor; }
 #agent .qui .pole { font-weight: 600; }
 #agent .qui em { margin-left: auto; font-style: normal; }
-#agent .choix { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 2px 10px; }
+/* en bas de la fiche : Discuter et Confier une tâche, toujours visibles */
+#agent .choix { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 0; padding-top: 10px; border-top: 1px solid rgba(43, 47, 69, .12); flex: none; }
+/* identité : portrait en buste et premières infos */
+#agent .identite { display: grid; grid-template-columns: 72px 1fr; gap: 12px; align-items: center; margin: 0 2px 10px; padding: 6px 0 0 5px; }   /* place pour le liseré du rond */
+#agent .portrait { width: 72px; height: 72px; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 35%, #fff, color-mix(in srgb, var(--pole) 30%, #e2e8f0)); box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--pole); }
+#agent .portrait canvas { width: 72px; height: 72px; display: block; }
+#agent .identite .poste { margin: 0 0 3px; }
+#agent .identite .qui { margin: 0 0 3px; }
+#agent .lieu { margin: 0; font-size: 12px; color: var(--doux); }
+/* sections de la fiche */
+#agent .vue-fiche section { margin: 0 2px 12px; }
+#agent .vue-fiche h3 { margin: 0 0 6px; font: 600 11px/1 var(--texte); letter-spacing: .06em; text-transform: uppercase; color: var(--doux); }
+#agent .activite { margin: 0; padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--pole) 10%, #fff); border-left: 3px solid var(--pole); font-size: 13px; line-height: 1.45; }
+#agent .maintenant .detail { margin: 5px 2px 0; font-size: 12px; color: var(--doux); }
+#agent .suivre { margin-top: 8px; }
+#agent .missions { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; }
+#agent .missions li::marker { color: var(--pole); }
+#agent .puces, #agent .collegues { display: flex; flex-wrap: wrap; gap: 5px; }
+#agent .puces span { padding: 3px 9px; border-radius: 999px; font-size: 12px; background: rgba(255, 255, 255, .7); border: 1px solid rgba(43, 47, 69, .14); }
+#agent .puces span.branche { border-color: color-mix(in srgb, var(--pole) 60%, transparent); background: color-mix(in srgb, var(--pole) 10%, #fff); }
+#agent .puces span.branche::before { content: "● "; color: #22c55e; }
+#agent .note-puces { margin: 6px 2px 0; font-size: 11px; color: var(--doux); }
+#agent .collegues button { padding: 3px 10px; border-radius: 999px; font: 600 12px/1.4 var(--texte); color: var(--encre); background: rgba(255, 255, 255, .7);
+  border: 1px solid color-mix(in srgb, var(--pole) 45%, transparent); cursor: var(--curseur-clic); }
+#agent .collegues button:hover, #agent .collegues button:focus-visible { background: #fff; border-color: var(--pole); outline: none; }
+#agent .retour { margin: 0 2px 8px; padding: 2px 0; border: 0; background: none; font: 600 12px/1.4 var(--texte); color: var(--doux); cursor: var(--curseur-clic); }
+#agent .retour:hover, #agent .retour:focus-visible { color: var(--encre); outline: none; text-decoration: underline; }
 #agent .choix .sf-bouton { border-image-source: url("../ui/kenney/ui-pack-sci-fi/bouton-gris.png"); color: var(--encre); text-shadow: none; }
 #agent .choix .sf-bouton[aria-selected="true"] { border-image-source: var(--bouton); color: var(--sur); text-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
 #agent .message { margin: 0 4px 10px; padding: 7px 10px; font-size: 12.5px; border-radius: 6px; background: #fde9c8; color: #7c2d12; }
