@@ -227,7 +227,7 @@ export function enseignePole(p, x, y, z, r, nom, phrase, couleur, w = 3.6) {
     try { c.letterSpacing = '14px'; } catch (e) { /* sans letterSpacing */ }
     c.fillText(nom.toUpperCase(), 512, 100, 960);    // largeur bornée : la police sci-fi est large
     try { c.letterSpacing = '0px'; } catch (e) { /* idem */ }
-    c.font = '44px "Kenney Future Narrow", system-ui, "Segoe UI", sans-serif';
+    c.font = '500 44px Inter, system-ui, "Segoe UI", sans-serif';   // phrase en Inter, nom du pôle en sci-fi
     c.fillStyle = fonce ? 'rgba(31,41,55,.85)' : 'rgba(255,255,255,.92)';
     c.fillText(phrase, 512, 200, 960);
   });
