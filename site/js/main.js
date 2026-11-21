@@ -19,6 +19,7 @@ import { creerMarche } from './marche.js';
 import { creerFoule } from './foule.js';
 import { creerFous } from './fous.js';
 import { creerBandeau } from './bandeau.js';
+import { creerGraphismes, ombrePortee } from './graphismes.js';
 import { POLES, ETATS } from './donnees.js';
 
 const $ = (s) => document.querySelector(s);
@@ -30,19 +31,26 @@ const PR_MAX = Math.min(devicePixelRatio, 1.5), PR_MIN = Math.min(.6, PR_MAX);
 let pr = PR_MAX;
 renderer.setPixelRatio(pr);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;  // bords d'ombre adoucis
 renderer.shadowMap.autoUpdate = false;          // ombres recalculées seulement quand une façade change
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
+// carte graphique : une carte « logicielle » (sans accélération) commence en graphismes légers
+const gl = renderer.getContext(), dbg = gl.getExtension('WEBGL_debug_renderer_info');
+const GPU = dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : 'inconnue';
+const LOGICIEL = /swiftshader|llvmpipe|basic render|software/i.test(GPU);
 
 const scene = new THREE.Scene();
-scene.add(new THREE.HemisphereLight(0xd6ecff, 0x9a7b55, 1.15));
-const sun = new THREE.DirectionalLight(0xfff0d6, 2.5);
+const lumiereCiel = new THREE.HemisphereLight(0xdbeeff, 0xb39773, 1.15);   // lumière du ciel (bleutée) et du sol (chaude)
+scene.add(lumiereCiel);
+const sun = new THREE.DirectionalLight(0xfff1dc, 2.5);               // soleil de journée, légèrement doré
 sun.position.set(26, 50, 20);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
-Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 160 });
-sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03;
+// ombres plus fines si la carte graphique le permet (la carte d'ombres n'est recalculée que rarement)
+const TAILLE_OMBRES = !LOGICIEL && renderer.capabilities.maxTextureSize >= 8192 ? 4096 : 2048;
+sun.shadow.mapSize.set(TAILLE_OMBRES, TAILLE_OMBRES);
+Object.assign(sun.shadow.camera, { left: -34, right: 34, top: 34, bottom: -34, near: 1, far: 160 });
+sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.025;
 scene.add(sun, sun.target);
 
 /* ================= Caméra ================= */
@@ -79,8 +87,8 @@ controls.addEventListener('start', () => pauseRotation(1e9));
 controls.addEventListener('end', () => pauseRotation(7));
 
 /* ================= Fusion des objets fixes (performances) =================
-   Des milliers de petits objets deviennent quelques dizaines de maillages, et les matériaux
-   « physiques » deviennent des matériaux Lambert, bien plus légers à calculer pour chaque pixel. */
+   Des milliers de petits objets deviennent quelques dizaines de maillages. Les matériaux restent « physiques »
+   (graphismes élevés) ; leur version Lambert, bien plus légère, sert aux graphismes légers (graphismes.js). */
 const lambertCache = new Map();
 function toLambert(m) {
   if (!m.isMeshStandardMaterial) return m;
@@ -104,14 +112,14 @@ function fusionner(racine, dest, garder = false) {
     const uniBasic = m.isMeshBasicMaterial && !m.map && !m.transparent && !m.wireframe;
     let cle, mat = m;
     if (uniStd || uniBasic) {
-      const mk = uniStd ? `L${m.flatShading}` : 'B';
+      const mk = uniStd ? `S${m.flatShading}` : 'B';
       cle = mk + (o.castShadow ? 's' : 'n');
-      if (!partages.has(mk)) partages.set(mk, uniStd ? new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: m.flatShading }) : new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }));
+      if (!partages.has(mk)) partages.set(mk, uniStd ? new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: m.flatShading, roughness: .8, metalness: 0 }) : new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }));
       mat = partages.get(mk);
       const n = g.attributes.position.count, c = new Float32Array(n * 3);
       for (let i = 0; i < n; i++) { c[i * 3] = m.color.r; c[i * 3 + 1] = m.color.g; c[i * 3 + 2] = m.color.b; }
       g.setAttribute('color', new THREE.Float32BufferAttribute(c, 3));
-    } else { mat = toLambert(m); cle = mat.uuid + (o.castShadow ? 's' : 'n'); }
+    } else { mat = m; cle = mat.uuid + (o.castShadow ? 's' : 'n'); }
     for (const nom of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(nom) && !(mat.vertexColors && nom === 'color')) g.deleteAttribute(nom);
     if (!g.attributes.uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
     if (!g.attributes.normal) g.computeVertexNormals();
@@ -137,6 +145,8 @@ function compacter(g) {
   fusionner(g, g, true);
   for (const m of membres) { m.traverse(o => { if (o.isMesh) o.userData.keep = false; }); fusionner(m, m, true); }
   g.traverse(o => { if (o.isMesh) o.castShadow = false; });     // les ombres ne sont recalculées que si une façade change
+  if (g.userData.jambes) ombrePortee(g);                         // à la place : une ombre douce sous ses pieds
+  graphismes.appliquer(g);
 }
 
 /* ================= Construction ================= */
@@ -158,7 +168,11 @@ for (const a of [...agentsPoses, ...figurantsPoses]) for (const b of a.groupe.us
 }
 for (const a of [...agentsPoses, ...figurantsPoses]) compte(fusionner(a.groupe, a.groupe, true));     // chaque agent (ou figurant) = 1 maillage (+ ses 2 bras)
 compte(fusionner(scene, scene));
-scene.traverse((o) => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map(toLambert) : toLambert(o.material); });
+// graphismes : élevés par défaut, légers sur une carte sans accélération ; le choix fait dans le panneau est gardé
+const graphismes = creerGraphismes({ renderer, scene, soleil: sun, ciel: lumiereCiel, versLambert: toLambert });
+let choixGraphismes = null;
+try { choixGraphismes = localStorage.getItem('qg-graphismes'); } catch { /* stockage indisponible */ }
+graphismes.regler(choixGraphismes === 'leger' || choixGraphismes === 'eleve' ? choixGraphismes : LOGICIEL ? 'leger' : 'eleve');
 console.log(`Fusion : ${avant} objets → ${apres} maillages`);
 // le ciel : planètes en orbite et Lune à sa vraie phase (ajoutés après la fusion, ils bougent)
 const ciel = creerCiel(scene);
@@ -201,6 +215,7 @@ const lieuDe = (a) => a.lieu || a.zone;     // en réunion ou en pause (et en ro
 // la vie du QG : promeneurs, pauses café ou arcade, et quelques détails un peu fous
 const foule = creerFoule({ scene, zones, sol: hauteurSol, chemins, marche, reunion, agentsPoses, compacter });
 const fous = creerFous({ scene, zones, sol: hauteurSol, collisions, agentsPoses, compacter });
+graphismes.appliquer(scene);                                    // drone, robot… au niveau de graphismes choisi
 
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 function zoneSous(x, y) {
@@ -495,7 +510,7 @@ function majFacades() {
 
 /* ================= Fluidité : résolution adaptative et détection de la carte graphique ================= */
 const fpsEl = $('#fps');
-let refresh = 60, perfT = 0, perfN = 0, bonnes = 0, attente = 0;
+let refresh = 60, perfT = 0, perfN = 0, bonnes = 0, attente = 0, lent = 0;
 function adapterResolution(dt, t) {
   if (document.hidden || dt >= .1) { perfT = 0; perfN = 0; return; }
   perfT += dt; perfN++;
@@ -503,18 +518,31 @@ function adapterResolution(dt, t) {
   const fps = perfN / perfT; perfT = 0; perfN = 0;
   refresh = Math.max(refresh, Math.min(fps, 240));
   const cible = Math.min(refresh, 144) * .92;
+  // graphismes élevés trop lourds, même à la plus basse résolution : on passe tout seul en graphismes légers
+  if (graphismes.niveau() === 'eleve' && !choixGraphismes && pr <= PR_MIN + 1e-3 && fps < 45) { if ((lent += .5) >= 4) { reglerGraphismes('leger', true); lent = 0; } } else lent = 0;
   if (fps < Math.max(55, cible * .85) && pr > PR_MIN) { pr = Math.max(PR_MIN, pr * .82); renderer.setPixelRatio(pr); bonnes = 0; attente = t + 4; }
   else if (fps >= cible && pr < PR_MAX && t > attente) { if (++bonnes >= 6) { pr = Math.min(PR_MAX, pr * 1.12); renderer.setPixelRatio(pr); bonnes = 0; attente = t + 2; } }
   else bonnes = 0;
 }
-const gl = renderer.getContext(), dbg = gl.getExtension('WEBGL_debug_renderer_info');
-const GPU = dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : 'inconnue';
-const LOGICIEL = /swiftshader|llvmpipe|basic render|software/i.test(GPU);
 fpsEl.title = 'Carte graphique utilisée : ' + GPU;
 if (LOGICIEL) { renderer.shadowMap.enabled = false; pr = PR_MIN; renderer.setPixelRatio(pr); }
 
+/* ================= Choix des graphismes (panneau) ================= */
+const boutonsGraphismes = [...document.querySelectorAll('#graphismes [data-niveau]')];
+function reglerGraphismes(n, auto = false) {
+  graphismes.regler(n);
+  for (const b of boutonsGraphismes) b.setAttribute('aria-pressed', String(b.dataset.niveau === n));
+  $('#graphismes .note').textContent = auto ? '(automatique : ton ordinateur peinait)' : '';
+}
+boutonsGraphismes.forEach(b => b.addEventListener('click', () => {
+  choixGraphismes = b.dataset.niveau;
+  try { localStorage.setItem('qg-graphismes', choixGraphismes); } catch { /* stockage indisponible */ }
+  reglerGraphismes(choixGraphismes);
+}));
+reglerGraphismes(graphismes.niveau());
+
 // accès pratique depuis la console du navigateur (débogage)
-window.qg = { scene, camera, controls, zones, agents: agentsPoses, portes, allerVers, vueEnsemble, entrerDans, vueDuHaut, visite, onglets, reunion, foule, fous, marche, chemins, collisions, sol: hauteurSol };
+window.qg = { scene, camera, controls, zones, agents: agentsPoses, portes, allerVers, vueEnsemble, entrerDans, vueDuHaut, visite, graphismes, renderer, onglets, reunion, foule, fous, marche, chemins, collisions, sol: hauteurSol };
 
 /* ================= Boucle ================= */
 const clock = new THREE.Clock();
