@@ -3,21 +3,7 @@
 // Du travail en cours, la page ne reçoit que le nom de l'outil et le nom du fichier, jamais leur contenu.
 import { POLES, ETATS } from './donnees.js';
 import { reglerTravail } from './mobilier.js';
-
-/* ---------- liaison avec le serveur local ---------- */
-// Le serveur glisse un jeton secret dans la page à chaque démarrage ; l'API refuse toute demande sans lui.
-const JETON = document.querySelector('meta[name="qg-jeton"]')?.content || '';
-const SANS_SERVEUR = !JETON || JETON.startsWith('__');
-
-async function appeler(chemin, corps) {
-  const entetes = { 'x-qg-jeton': JETON };
-  if (corps) entetes['Content-Type'] = 'application/json';
-  const r = await fetch(chemin, { method: corps ? 'POST' : 'GET', headers: entetes, body: corps ? JSON.stringify(corps) : undefined, cache: 'no-store' });
-  let j = {};
-  try { j = await r.json(); } catch { /* réponse vide */ }
-  if (!r.ok) throw new Error(j.erreur || `Le serveur a répondu ${r.status}.`);
-  return j;
-}
+import { JETON, SANS_SERVEUR, appeler } from './api.js';
 
 /** Flux d'une tâche (format « server-sent events »), lu avec fetch pour envoyer le jeton dans un en-tête. */
 async function suivreFlux(id, surEvenement) {
