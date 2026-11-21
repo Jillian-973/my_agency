@@ -6,7 +6,9 @@ import { anim } from './outils.js';
 import { chargerModeles } from './modeles.js';
 import { construireMonde, BX, BZ, Y0, ISLET } from './monde.js';
 import { agentsPoses } from './mobilier.js';
-import { ajusterEtiquettes } from './etiquettes.js';
+import { ajusterEtiquettes, ajusterEtiquettesVisite, quitterEtiquettesVisite } from './etiquettes.js';
+import { construireCollisions } from './collisions.js';
+import { creerVisite } from './visite.js';
 import { POLES, ETATS } from './donnees.js';
 
 const $ = (s) => document.querySelector(s);
@@ -121,7 +123,9 @@ function fusionner(racine, dest, garder = false) {
 /* ================= Construction ================= */
 const barre = $('#chargement .barre i');
 await chargerModeles((k) => { barre.style.width = Math.round(k * 100) + '%'; });
-const { facade, zones } = construireMonde(scene);
+const { facade, zones, world, islet, portes, sol: hauteurSol } = construireMonde(scene);
+// les collisions sont relevées avant la fusion, tant que chaque mur et chaque meuble est encore un objet à part
+const collisions = construireCollisions([world, islet], portes);
 
 let avant = 0, apres = 0;
 const compte = ([a, b]) => { avant += a; apres += b; };
@@ -204,7 +208,51 @@ function afficherFiche(z) {
   f.hidden = false;
 }
 $('#fiche .fermer').addEventListener('click', vueEnsemble);
-$('#ensemble').addEventListener('click', vueEnsemble);
+
+/* ================= Visite à la première personne ================= */
+const visite = creerVisite({
+  canvas, collisions, sol: hauteurSol, portes,
+  interface: { hud: $('#visite'), reprendre: $('#reprendre'), invite: $('#invite') },
+});
+const libre = (x, z) => { const s = hauteurSol(x, z); return s !== null && !collisions.bloque(x, z, .32, s); };
+function pointLibre(x, z) {                       // l'endroit libre le plus proche (pour ne pas apparaître dans un meuble)
+  if (libre(x, z)) return [x, z];
+  for (let r = .25; r < 5; r += .25) for (let k = 0; k < 24; k++) {
+    const a = k / 24 * Math.PI * 2, px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r;
+    if (libre(px, pz)) return [px, pz];
+  }
+  return [x, z];
+}
+const lacetVers = (dx, dz) => Math.atan2(-dx, -dz);
+const VERS_INTERIEUR = { n: [0, 1], s: [0, -1], w: [1, 0], e: [-1, 0] };
+function passerEnVisite(x, z, lacet) {
+  vol = null; controls.enabled = false; controls.autoRotate = false;
+  $('#fiche').hidden = true; survol.hidden = true; document.body.classList.add('en-visite');
+  for (const k in facade) { facade[k].tall.visible = true; facade[k].low.visible = false; }   // tous les murs debout
+  cleFacades = ''; renderer.shadowMap.needsUpdate = true;
+  visite.entrer(x, z, lacet);
+}
+/** Entrer directement dans une salle : juste derrière sa porte, le regard tourné vers le centre de la pièce. */
+function entrerDans(z) {
+  if (!z) return;
+  const porte = portes.find(p => p.zone === z.id && !p.barriere);
+  let x = z.x, zz = z.z;
+  if (porte) { const [nx, nz] = VERS_INTERIEUR[porte.side]; x = porte.centre.x + nx; zz = porte.centre.z + nz; }
+  else if (z.id === 'forge') { x = z.x + 2.7; zz = z.z - 3.0; }        // en haut de l'escalier de la Forge
+  const [px, pz] = pointLibre(x, zz);
+  passerEnVisite(px, pz, lacetVers(z.x - px, z.z - pz));
+}
+/** « J'entre » : on arrive par l'entrée est du couloir sud, face au bâtiment. */
+function entrerParLaPorte() { const [px, pz] = pointLibre(BX - .8, 4.75); passerEnVisite(px, pz, lacetVers(-1, 0)); }
+function vueDuHaut() {
+  visite.sortir(); controls.enabled = true; document.body.classList.remove('en-visite');
+  quitterEtiquettesVisite(); cleFacades = '';
+  zoneActive = null; voler(VUE_ENSEMBLE, 1);
+}
+$('#entrer').addEventListener('click', entrerParLaPorte);
+$('#fiche .entrer').addEventListener('click', () => entrerDans(zoneActive));
+for (const b of document.querySelectorAll('[data-haut]')) b.addEventListener('click', vueDuHaut);
+$('#ensemble').addEventListener('click', () => (visite.actif() ? vueDuHaut() : vueEnsemble()));
 
 // légende : un bouton par pôle (+ le Quartier Général) qui fait voler la caméra jusqu'à sa salle
 const legende = $('#legende');
@@ -212,21 +260,21 @@ for (const [cle, p] of Object.entries(POLES)) {
   const z = zones.find(z => z.id === p.salle);
   const b = document.createElement('button'); b.type = 'button';
   b.innerHTML = `<i style="background:${p.couleur}"></i>`; b.append(p.nom);
-  b.addEventListener('click', () => allerVers(z));
+  b.addEventListener('click', () => (visite.actif() ? entrerDans(z) : allerVers(z)));
   legende.append(b);
 }
 {
   const z = zones.find(z => z.id === 'qg');
   const b = document.createElement('button'); b.type = 'button'; b.className = 'qg';
   b.innerHTML = '<i style="background:#b8860b"></i>'; b.append('Quartier Général');
-  b.addEventListener('click', () => allerVers(z));
+  b.addEventListener('click', () => (visite.actif() ? entrerDans(z) : allerVers(z)));
   legende.append(b);
 }
 
 /* ================= Souris : survol, clic sur une salle ================= */
 const survol = $('#survol');
 let appui = null;
-canvas.addEventListener('pointerdown', (e) => { appui = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+canvas.addEventListener('pointerdown', (e) => { if (visite.actif()) return; appui = { x: e.clientX, y: e.clientY, t: performance.now() }; });
 canvas.addEventListener('pointerup', (e) => {
   if (!appui) return;
   const bouge = Math.hypot(e.clientX - appui.x, e.clientY - appui.y), duree = performance.now() - appui.t;
@@ -235,7 +283,14 @@ canvas.addEventListener('pointerup', (e) => {
   const z = zoneSous(e.clientX, e.clientY);
   if (z) allerVers(z);
 });
+// double-clic sur une salle : on y entre directement, à la première personne
+canvas.addEventListener('dblclick', (e) => {
+  if (visite.actif()) return;
+  const z = zoneSous(e.clientX, e.clientY);
+  if (z) entrerDans(z);
+});
 canvas.addEventListener('pointermove', (e) => {
+  if (visite.actif()) { survol.hidden = true; canvas.style.cursor = ''; return; }
   if (e.buttons) { survol.hidden = true; return; }
   const z = zoneSous(e.clientX, e.clientY);
   canvas.style.cursor = z ? 'pointer' : '';
@@ -253,7 +308,7 @@ const curseur = new THREE.Vector2();
 const placerCurseur = (x, y) => curseur.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1);
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
-  if (vol) return;
+  if (vol || visite.actif()) return;
   let dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1);
   dy = THREE.MathUtils.clamp(dy, -150, 150);
   zoomBut = THREE.MathUtils.clamp(zoomBut * Math.exp(-dy * (e.ctrlKey ? .012 : .0016)), ZMIN, ZMAX);
@@ -271,8 +326,8 @@ canvas.addEventListener('touchmove', (e) => {
 }, { passive: true });
 canvas.addEventListener('touchend', () => { pince = 0; }, { passive: true });
 
-const sol = new THREE.Plane(new THREE.Vector3(0, 1, 0), -Y0);
-function auSol(v) { camera.updateMatrixWorld(); ray.setFromCamera(v, camera); return ray.ray.intersectPlane(sol, new THREE.Vector3()); }
+const planSol = new THREE.Plane(new THREE.Vector3(0, 1, 0), -Y0);
+function auSol(v) { camera.updateMatrixWorld(); ray.setFromCamera(v, camera); return ray.ray.intersectPlane(planSol, new THREE.Vector3()); }
 function avancerZoom(dt) {
   if (Math.abs(camera.zoom - zoomBut) < 1e-4) return;
   const a = auSol(curseur);
@@ -287,6 +342,7 @@ const touches = new Set();
 const DEPLACE = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
 addEventListener('keydown', (e) => {
   if (e.target.closest && e.target.closest('input, textarea')) return;
+  if (visite.actif()) return;                      // en visite, Échap rend simplement la souris
   if (e.code === 'Escape') { vueEnsemble(); return; }
   if (DEPLACE.includes(e.code)) { touches.add(e.code); e.preventDefault(); pauseRotation(7); }
 });
@@ -342,7 +398,7 @@ fpsEl.title = 'Carte graphique utilisée : ' + GPU;
 if (LOGICIEL) { renderer.shadowMap.enabled = false; pr = PR_MIN; renderer.setPixelRatio(pr); }
 
 // accès pratique depuis la console du navigateur (débogage)
-window.qg = { scene, camera, controls, zones, agents: agentsPoses, allerVers, vueEnsemble };
+window.qg = { scene, camera, controls, zones, agents: agentsPoses, portes, allerVers, vueEnsemble, entrerDans, vueDuHaut, visite };
 
 /* ================= Boucle ================= */
 const clock = new THREE.Clock();
@@ -350,6 +406,14 @@ let fpsT = 0, fpsN = 0;
 function image() {
   const dt = Math.min(clock.getDelta(), .1), t = clock.elapsedTime;
   for (const a of anim) a.fn(t, dt);
+  visite.mettreAJour(dt);
+  if (visite.actif()) {
+    ajusterEtiquettesVisite(visite.camera.position);
+    renderer.render(scene, visite.camera);
+    adapterResolution(dt, t); compterImages(dt);
+    requestAnimationFrame(image);
+    return;
+  }
   if (vol) {
     vol.t += dt;
     const k = ease(Math.min(1, vol.t / vol.duree));
@@ -365,9 +429,11 @@ function image() {
   majFacades();
   ajusterEtiquettes(camera, innerHeight);
   renderer.render(scene, camera);
-  adapterResolution(dt, t);
+  adapterResolution(dt, t); compterImages(dt);
+  requestAnimationFrame(image);
+}
+function compterImages(dt) {
   fpsT += dt; fpsN++;
   if (fpsT > .5) { fpsEl.textContent = `${Math.round(fpsN / fpsT)} i/s · résolution ${Math.round(pr / PR_MAX * 100)} %${LOGICIEL ? ' · ⚠ accélération matérielle désactivée' : ''}`; fpsT = 0; fpsN = 0; }
-  requestAnimationFrame(image);
 }
 image();
