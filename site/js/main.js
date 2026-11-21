@@ -9,6 +9,7 @@ import { agentsPoses } from './mobilier.js';
 import { ajusterEtiquettes, ajusterEtiquettesVisite, quitterEtiquettesVisite } from './etiquettes.js';
 import { construireCollisions } from './collisions.js';
 import { creerVisite } from './visite.js';
+import { creerCiel, nomPhase, eclairage } from './planetes.js';
 import { POLES, ETATS } from './donnees.js';
 
 const $ = (s) => document.querySelector(s);
@@ -134,6 +135,13 @@ for (const a of agentsPoses) compte(fusionner(a.groupe, a.groupe, true));     //
 compte(fusionner(scene, scene));
 scene.traverse((o) => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map(toLambert) : toLambert(o.material); });
 console.log(`Fusion : ${avant} objets → ${apres} maillages`);
+// le ciel : planètes en orbite et Lune à sa vraie phase (ajoutés après la fusion, ils bougent)
+const ciel = creerCiel(scene);
+function afficherLune() {
+  const f = ciel.phase();
+  $('#lune').textContent = `Lune : ${nomPhase(f)} · ${Math.round(eclairage(f) * 100)} % éclairée`;
+}
+afficherLune(); setInterval(afficherLune, 60000);
 renderer.shadowMap.needsUpdate = true;
 $('#chargement').classList.add('fini');
 
@@ -407,6 +415,7 @@ function image() {
   const dt = Math.min(clock.getDelta(), .1), t = clock.elapsedTime;
   for (const a of anim) a.fn(t, dt);
   visite.mettreAJour(dt);
+  ciel.mettreAJour(t, visite.actif() ? visite.camera : camera);
   if (visite.actif()) {
     ajusterEtiquettesVisite(visite.camera.position);
     renderer.render(scene, visite.camera);

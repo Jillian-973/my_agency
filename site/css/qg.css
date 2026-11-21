@@ -60,6 +60,9 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 #fps { position: fixed; bottom: 14px; right: 16px; font: 11px ui-monospace, monospace; color: #334155; background: rgba(255, 255, 255, .6);
   padding: 3px 7px; border-radius: 6px; }
 
+.panneau .lune { margin: 8px 0 0; font-size: 11px; color: var(--doux); }
+.panneau .lune::before { content: "☾ "; }
+
 /* boutons principaux (J'entre, Vue d'en haut…) */
 button.principal { background: var(--or) !important; color: #fff; }
 .actions { flex-wrap: wrap; }
