@@ -1,0 +1,17 @@
+# Fins de ligne homogènes quel que soit le système (le projet est développé sous Windows)
+* text=auto eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Fichiers binaires : jamais modifiés ni comparés comme du texte
+*.glb binary
+*.gltf binary
+*.bin binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.avif binary
+*.ico binary
+
+# Code tiers : exclu des statistiques de langage de GitHub
+site/vendor/** linguist-vendored

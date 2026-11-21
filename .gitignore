@@ -1,0 +1,39 @@
+# ── Dépendances et builds (pour les futures étapes) ──
+node_modules/
+dist/
+build/
+.cache/
+coverage/
+
+# ── Secrets : aucune clé ni mot de passe dans le dépôt ──
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# ── Journaux ──
+*.log
+npm-debug.log*
+logs/
+
+# ── Systèmes et éditeurs ──
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# ── Claude Code : réglages locaux et sessions ──
+.claude/settings.local.json
+.claude/sessions/
+
+# ── Captures de référence : images de jeux sous droits, gardées en local uniquement ──
+references/
+
+# ── Fichiers temporaires ──
+*.tmp
+site/_*.html
