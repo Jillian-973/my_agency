@@ -23,8 +23,8 @@
   --sf-etroit: "Kenney Future Narrow", "Segoe UI", system-ui, sans-serif;
   --texte: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   --ui: url("../ui/kenney/ui-pack-sci-fi/");
-  /* curseurs du pack sci-fi (pointe en 2,2) : flèche blanche, et flèche à anneau sur ce qui se clique */
-  --curseur: url("../ui/kenney/ui-pack-sci-fi/curseur.png") 2 2, auto;
+  /* curseurs du pack sci-fi : flèche biseautée (6e curseur, pointe en 1,1), et flèche à anneau (pointe en 2,2) sur ce qui se clique */
+  --curseur: url("../ui/kenney/ui-pack-sci-fi/curseur.png") 1 1, auto;
   --curseur-clic: url("../ui/kenney/ui-pack-sci-fi/curseur-clic.png") 2 2, pointer;
 }
 * { box-sizing: border-box; }
