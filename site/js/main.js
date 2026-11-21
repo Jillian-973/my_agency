@@ -225,7 +225,9 @@ function afficherFiche(z) {
   const pole = z.pole ? POLES[z.pole] : null;
   const gens = agentsPoses.filter(a => a.zone === z.id);
   f.querySelector('.titre').textContent = z.nom;
-  f.querySelector('.titre').style.setProperty('--c', z.couleur);
+  // couleurs du pôle de la salle (en-tête, bouton, liseré des agents) ; bleu d'origine pour les salles communes
+  const cle = z.pole || (z.id === 'qg' ? 'qg' : '');
+  if (cle) f.dataset.pole = cle; else delete f.dataset.pole;
   f.querySelector('.pole').textContent = pole ? `Pôle ${pole.nom}` : '';
   const ul = f.querySelector('ul'); ul.replaceChildren();
   for (const pose of gens) {
@@ -317,14 +319,14 @@ const legende = $('#legende');
 for (const [cle, p] of Object.entries(POLES)) {
   const z = zones.find(z => z.id === p.salle);
   const b = document.createElement('button'); b.type = 'button';
-  b.innerHTML = `<i style="background:${p.couleur}"></i>`; b.append(p.nom);
+  b.innerHTML = `<i style="background:${p.couleur}"></i>`; b.append(p.nom); b.style.setProperty('--c', p.couleur);
   b.addEventListener('click', () => (visite.actif() ? entrerDans(z) : allerVers(z)));
   legende.append(b);
 }
 {
   const z = zones.find(z => z.id === 'qg');
   const b = document.createElement('button'); b.type = 'button'; b.className = 'qg';
-  b.innerHTML = '<i style="background:#b8860b"></i>'; b.append('Quartier Général');
+  b.innerHTML = '<i style="background:#b8860b"></i>'; b.append('Quartier Général'); b.style.setProperty('--c', '#c9971c');
   b.addEventListener('click', () => (visite.actif() ? entrerDans(z) : allerVers(z)));
   legende.append(b);
 }

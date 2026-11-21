@@ -23,8 +23,8 @@
   <div class="barre"><i></i></div>
 </div>
 
-<aside class="panneau sf-panneau">
-  <h1 class="sf-titre">JILL KORP · le QG</h1>
+<aside class="panneau sf-cadre cadre-entete" data-pole="qg">
+  <h1 class="sf-entete">JILL KORP · le QG</h1>
   <p class="consigne-haut">Clique sur un pôle pour y voler, double-clique pour y entrer.</p>
   <p class="consigne-visite">Clique sur un pôle pour t'y rendre directement.</p>
   <nav id="legende" aria-label="Aller vers un pôle"></nav>
@@ -36,21 +36,23 @@
   </div>
 </aside>
 
-<section id="fiche" class="sf-panneau" hidden aria-live="polite">
+<section id="fiche" class="sf-cadre cadre-entete" hidden aria-live="polite">
+  <h2 class="titre sf-entete"></h2>
   <button class="fermer sf-bouton gris" type="button" aria-label="Fermer et revenir à la vue d'ensemble">×</button>
-  <h2 class="titre sf-titre"></h2>
-  <p class="pole"></p>
-  <ul></ul>
-  <p class="vide">Personne ne travaille ici en ce moment.</p>
-  <button class="entrer sf-bouton principal" type="button">J'entre dans cette salle</button>
+  <div class="defile">
+    <p class="pole"></p>
+    <ul></ul>
+    <p class="vide">Personne ne travaille ici en ce moment.</p>
+  </div>
+  <button class="entrer sf-bouton du-pole" type="button">J'entre dans cette salle</button>
 </section>
 
 <!-- visite à la première personne -->
 <div id="visite" hidden>
   <div class="viseur" aria-hidden="true"></div>
   <div id="invite" class="sf-bulle" hidden></div>
-  <aside id="minimap" class="sf-panneau" aria-label="Plan du bureau">
-    <h2 class="sf-titre">Plan</h2>
+  <aside id="minimap" class="sf-cadre cadre-verre" aria-label="Plan du bureau">
+    <h2 class="sf-titre gris">Plan</h2>
     <canvas width="208" height="208"></canvas>
     <p class="lieu"></p>
     <button class="haut sf-bouton principal" type="button" data-haut>Vue d'en haut</button>
@@ -58,8 +60,8 @@
   <div class="aide-visite sf-bulle"><span class="si-capture">Z Q S D ou flèches : marcher · Maj : courir · souris : regarder · E : ouvrir une porte ou parler à un agent · Échap : rendre la souris</span><span class="si-glisser">Z Q S D ou flèches : marcher · Maj : courir · glisser avec la souris : regarder · E : ouvrir une porte ou parler à un agent</span></div>
 </div>
 <div id="reprendre" hidden>
-  <div class="carte sf-panneau">
-    <h2 class="sf-titre">Visite en pause</h2>
+  <div class="carte sf-cadre cadre-encoche">
+    <h2 class="sf-entete">Visite en pause</h2>
     <p>La souris est libre.</p>
     <button type="button" class="sf-bouton principal" data-reprendre>Reprendre la visite</button>
     <button type="button" class="sf-bouton" data-haut>Vue d'en haut</button>
@@ -68,11 +70,11 @@
 
 <!-- fenêtre d'un agent : discuter ou lui confier une tâche (Claude Code, en local) -->
 <div id="agent" hidden>
-  <section class="carte sf-panneau" role="dialog" aria-modal="true" aria-labelledby="agent-titre">
-    <header class="entete">
-      <h2 id="agent-titre" class="sf-titre"></h2>
-      <button class="fermer sf-bouton gris" type="button" aria-label="Fermer la fenêtre de l'agent">×</button>
-    </header>
+  <section class="carte sf-cadre cadre-onglet" role="dialog" aria-modal="true" aria-labelledby="agent-titre">
+    <h2 id="agent-titre" class="sf-entete"></h2>
+    <button class="fermer sf-bouton gris" type="button" aria-label="Fermer la fenêtre de l'agent">×</button>
+    <div class="defile">
+    <p class="poste"></p>
     <p class="qui"><i></i><span class="pole"></span><em class="etat"></em></p>
     <div class="choix" role="tablist">
       <button class="sf-bouton" type="button" role="tab" data-onglet="discuter">Discuter</button>
@@ -84,7 +86,7 @@
       <ol class="fil" aria-live="polite"></ol>
       <form class="ecrire">
         <input type="text" maxlength="2000" autocomplete="off" required>
-        <button class="sf-bouton principal" type="submit">Envoyer</button>
+        <button class="sf-bouton du-pole" type="submit">Envoyer</button>
       </form>
       <p class="note">Réponse sans aucun outil. Rien n'est enregistré : la discussion s'efface en rechargeant la page.</p>
     </div>
@@ -92,7 +94,7 @@
     <div class="onglet tache" hidden>
       <form class="confier">
         <textarea rows="5" maxlength="8000" required></textarea>
-        <button class="sf-bouton principal" type="submit">Lancer la tâche</button>
+        <button class="sf-bouton du-pole" type="submit">Lancer la tâche</button>
         <p class="note"></p>
       </form>
       <div class="suivi" hidden>
@@ -105,11 +107,12 @@
           <ul class="fichiers"></ul>
           <p class="cout"></p>
           <div class="boutons">
-            <button class="ouvrir sf-bouton principal" type="button">Ouvrir son dossier</button>
+            <button class="ouvrir sf-bouton du-pole" type="button">Ouvrir son dossier</button>
             <button class="nouvelle sf-bouton gris" type="button">Nouvelle tâche</button>
           </div>
         </div>
       </div>
+    </div>
     </div>
   </section>
 </div>

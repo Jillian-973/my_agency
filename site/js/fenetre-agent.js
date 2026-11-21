@@ -43,7 +43,7 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {} }) {
   const $ = (s) => racine.querySelector(s);
   const racine = document.getElementById('agent');
   const ui = {
-    titre: $('#agent-titre'), pastille: $('.qui i'), pole: $('.qui .pole'), etat: $('.qui .etat'), message: $('.message'),
+    titre: $('#agent-titre'), poste: $('.poste'), pastille: $('.qui i'), pole: $('.qui .pole'), etat: $('.qui .etat'), message: $('.message'),
     onglets: [...racine.querySelectorAll('[data-onglet]')],
     discuter: $('.onglet.discuter'), fil: $('.fil'), ecrire: $('.ecrire'), saisie: $('.ecrire input'),
     tache: $('.onglet.tache'), confier: $('.confier'), consigne: $('.confier textarea'), noteTache: $('.confier .note'),
@@ -61,7 +61,9 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {} }) {
   /* ----- ouverture, fermeture, onglets ----- */
   function ouvrir(agent) {
     actuel = agent;
-    ui.titre.textContent = `${prenomDe(agent)} · ${agent.poste}`;
+    racine.dataset.pole = agent.pole || 'qg';              // la fenêtre prend la couleur du pôle de l'agent
+    ui.titre.textContent = prenomDe(agent);
+    ui.poste.textContent = agent.poste.charAt(0).toUpperCase() + agent.poste.slice(1);
     ui.pole.textContent = agent.pole ? `Pôle ${POLES[agent.pole].nom}` : 'Quartier Général';
     ui.consigne.placeholder = `Ce que ${prenomDe(agent)} doit faire, avec le plus de détails possible…`;
     ui.saisie.placeholder = `Écris à ${prenomDe(agent)}…`;

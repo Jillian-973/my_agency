@@ -25,6 +25,7 @@
   --ui: url("../ui/kenney/ui-pack-sci-fi/");
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }   /* « hidden » l'emporte toujours sur les display: flex ou grid */
 /* titres en police sci-fi (Kenney Future, classe .sf-titre) ; tout le reste en Inter */
 html, body { margin: 0; height: 100%; overflow: hidden; font-family: var(--texte); color: var(--encre); }
 body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
@@ -41,8 +42,8 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 .sf-titre {
   margin: -4px -6px 8px; padding: 4px 12px; min-height: 24px;
   border-style: solid; border-width: 6px 8px;
-  border-image: url("../ui/kenney/ui-pack-sci-fi/barre-titre.png") 8 fill / 6px 8px stretch;
-  color: #fff; font-family: var(--sf); font-weight: normal; font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
+  border-image: var(--titre) 8 fill / 6px 8px stretch;
+  color: var(--sur); font-family: var(--sf); font-weight: normal; font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
   text-shadow: 0 1px 0 rgba(0, 40, 90, .45); line-height: 14px;
 }
 .sf-bouton {
@@ -59,6 +60,49 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
   border-radius: 999px; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); }
 .sf-lien { font-family: var(--texte); font-size: 12px; color: var(--doux); }
 
+
+/* ---------- couleurs des pôles ----------
+   Variantes des images Kenney recolorées à la couleur exacte de chaque pôle (dossier ui/kenney/ui-pack-sci-fi/couleurs).
+   Un élément avec data-pole="…" (fiche, fenêtre d'agent, sections des Mentions) prend ses titres, boutons et en-têtes. */
+:root { --pole: #1c9be0; --sur: #fff; --titre: url("../ui/kenney/ui-pack-sci-fi/barre-titre.png"); --bouton: url("../ui/kenney/ui-pack-sci-fi/bouton-bleu.png");
+  --entete: url("../ui/kenney/ui-pack-sci-fi/couleurs/entete-neutre.png"); --onglet: url("../ui/kenney/ui-pack-sci-fi/couleurs/onglet-neutre.png"); }
+[data-pole="cabinet"] { --pole: #3b82f6; --sur: #fff; --titre: url("../ui/kenney/ui-pack-sci-fi/couleurs/titre-cabinet.png"); --bouton: url("../ui/kenney/ui-pack-sci-fi/couleurs/bouton-cabinet.png");
+  --entete: url("../ui/kenney/ui-pack-sci-fi/couleurs/entete-cabinet.png"); --onglet: url("../ui/kenney/ui-pack-sci-fi/couleurs/onglet-cabinet.png"); }
+[data-pole="radar"] { --pole: #8b5cf6; --sur: #fff; --titre: url("../ui/kenney/ui-pack-sci-fi/couleurs/titre-radar.png"); --bouton: url("../ui/kenney/ui-pack-sci-fi/couleurs/bouton-radar.png");
+  --entete: url("../ui/kenney/ui-pack-sci-fi/couleurs/entete-radar.png"); --onglet: url("../ui/kenney/ui-pack-sci-fi/couleurs/onglet-radar.png"); }
+[data-pole="atelier"] { --pole: #22c55e; --sur: #fff; --titre: url("../ui/kenney/ui-pack-sci-fi/couleurs/titre-atelier.png"); --bouton: url("../ui/kenney/ui-pack-sci-fi/couleurs/bouton-atelier.png");
+  --entete: url("../ui/kenney/ui-pack-sci-fi/couleurs/entete-atelier.png"); --onglet: url("../ui/kenney/ui-pack-sci-fi/couleurs/onglet-atelier.png"); }
+[data-pole="forge"] { --pole: #f97316; --sur: #fff; --titre: url("../ui/kenney/ui-pack-sci-fi/couleurs/titre-forge.png"); --bouton: url("../ui/kenney/ui-pack-sci-fi/couleurs/bouton-forge.png");
+  --entete: url("../ui/kenney/ui-pack-sci-fi/couleurs/entete-forge.png"); --onglet: url("../ui/kenney/ui-pack-sci-fi/couleurs/onglet-forge.png"); }
+[data-pole="studio"] { --pole: #ec4899; --sur: #fff; --titre: url("../ui/kenney/ui-pack-sci-fi/couleurs/titre-studio.png"); --bouton: url("../ui/kenney/ui-pack-sci-fi/couleurs/bouton-studio.png");
+  --entete: url("../ui/kenney/ui-pack-sci-fi/couleurs/entete-studio.png"); --onglet: url("../ui/kenney/ui-pack-sci-fi/couleurs/onglet-studio.png"); }
+[data-pole="montage"] { --pole: #ef4444; --sur: #fff; --titre: url("../ui/kenney/ui-pack-sci-fi/couleurs/titre-montage.png"); --bouton: url("../ui/kenney/ui-pack-sci-fi/couleurs/bouton-montage.png");
+  --entete: url("../ui/kenney/ui-pack-sci-fi/couleurs/entete-montage.png"); --onglet: url("../ui/kenney/ui-pack-sci-fi/couleurs/onglet-montage.png"); }
+[data-pole="phare"] { --pole: #facc15; --sur: #3b2a00; --titre: url("../ui/kenney/ui-pack-sci-fi/couleurs/titre-phare.png"); --bouton: url("../ui/kenney/ui-pack-sci-fi/couleurs/bouton-phare.png");
+  --entete: url("../ui/kenney/ui-pack-sci-fi/couleurs/entete-phare.png"); --onglet: url("../ui/kenney/ui-pack-sci-fi/couleurs/onglet-phare.png"); }
+[data-pole="qg"] { --pole: #c9971c; --sur: #fff; --titre: url("../ui/kenney/ui-pack-sci-fi/couleurs/titre-qg.png"); --bouton: url("../ui/kenney/ui-pack-sci-fi/couleurs/bouton-qg.png");
+  --entete: url("../ui/kenney/ui-pack-sci-fi/couleurs/entete-qg.png"); --onglet: url("../ui/kenney/ui-pack-sci-fi/couleurs/onglet-qg.png"); }
+
+/* ---------- cadres à en-tête (plusieurs formes du pack) ----------
+   L'image est posée sur un pseudo-élément : l'onglet coloré peut être large sans repousser le contenu. */
+.sf-cadre { position: relative; isolation: isolate; padding: 42px 14px 16px; }
+.sf-cadre::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-style: solid;
+  border-image-source: var(--cadre); border-image-slice: var(--coupe) fill; border-image-width: var(--bords); border-image-repeat: stretch; border-width: var(--bords);
+  filter: drop-shadow(0 6px 14px rgba(20, 30, 60, .25)); }
+.sf-entete { position: absolute; top: 0; left: 12px; height: 32px; margin: 0; max-width: var(--entete-max); line-height: 33px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: var(--sf); font-weight: normal; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--sur); text-shadow: 0 1px 0 rgba(0, 0, 0, .28); }
+/* en-tête sur toute la largeur */
+.cadre-entete { --cadre: var(--entete); --coupe: 34 16 16 16; --bords: 34px 16px 16px 16px; --entete-max: calc(100% - 24px); }
+/* onglet en biseau (« blade ») à gauche */
+.cadre-onglet { --cadre: var(--onglet); --coupe: 34 16 16 170; --bords: 34px 16px 16px 170px; --entete-max: 140px; }
+/* onglet à encoche, gris */
+.cadre-encoche { --cadre: url("../ui/kenney/ui-pack-sci-fi/couleurs/encoche-gris.png"); --coupe: 34 16 16 200; --bords: 34px 16px 16px 200px; --entete-max: 172px; }
+/* verre aux coins coupés, sans en-tête */
+.cadre-verre { --cadre: url("../ui/kenney/ui-pack-sci-fi/couleurs/verre-biseau.png"); --coupe: 16 16 8 16; --bords: 16px 16px 8px 16px; padding: 14px 14px 10px; }
+/* bouton et titre gris, bouton à la couleur du pôle */
+.sf-bouton.du-pole { border-image-source: var(--bouton); color: var(--sur); text-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
+.sf-titre.gris { border-image-source: url("../ui/kenney/ui-pack-sci-fi/couleurs/titre-gris.png"); color: var(--encre); text-shadow: none; }
+
 /* ---------- chargement ---------- */
 #chargement { position: fixed; inset: 0; display: grid; place-content: center; gap: 12px; text-align: center;
   background: radial-gradient(circle at 50% 40%, #2d3462, #1a1d38); color: #e7f2fa; z-index: 20; transition: opacity .6s; }
@@ -70,13 +114,12 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 #chargement.fini { opacity: 0; pointer-events: none; }
 
 /* ---------- panneau principal ---------- */
-.panneau { position: fixed; top: 14px; left: 14px; width: 278px; max-width: calc(100vw - 28px); }
-.panneau h1 { margin-bottom: 6px; }
+.panneau { position: fixed; top: 14px; left: 14px; width: 278px; max-width: calc(100vw - 28px); padding-bottom: 14px; }
 .panneau p { font-size: 12px; margin: 0 2px 8px; color: var(--doux); }
 #legende { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 6px; }
 #legende button { display: flex; align-items: center; gap: 7px; border: 1px solid transparent; background: transparent; padding: 4px 6px;
   border-radius: 6px; font-family: var(--texte); font-size: 12.5px; color: var(--encre); cursor: pointer; text-align: left; }
-#legende button:hover, #legende button:focus-visible { background: rgba(28, 155, 224, .12); border-color: rgba(28, 155, 224, .45); outline: none; }
+#legende button:hover, #legende button:focus-visible { background: color-mix(in srgb, var(--c, #1c9be0) 16%, transparent); border-color: color-mix(in srgb, var(--c, #1c9be0) 60%, transparent); outline: none; }
 #legende button.qg { grid-column: 1 / -1; font-weight: 600; }
 #legende i { width: 12px; height: 12px; border-radius: 2px; flex: none; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .2), 0 0 0 2px rgba(255, 255, 255, .7); }
 .panneau .lune { margin: 8px 2px 0; font-size: 11px; color: var(--doux); }
@@ -85,20 +128,21 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 .actions .sf-lien { margin-left: auto; }
 
 /* ---------- fiche de la salle ---------- */
-#fiche { position: fixed; left: 14px; bottom: 50px; width: 316px; max-width: calc(100vw - 28px); max-height: 48vh; overflow: auto; }
-#fiche .titre { --c: var(--bleu); margin-right: 38px; }
-#fiche .titre::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 7px; border-radius: 2px; background: var(--c); box-shadow: 0 0 0 2px rgba(255, 255, 255, .85); }
+#fiche { position: fixed; left: 14px; bottom: 50px; width: 330px; max-width: calc(100vw - 28px); max-height: 52vh; display: flex; flex-direction: column; }
+#fiche[hidden] { display: none; }
+#fiche .titre { --entete-max: calc(100% - 52px); font-size: 12px; }
+#fiche .defile { overflow: auto; overflow-x: hidden; min-height: 0; flex: 1; margin: 0 -4px; padding: 0 4px; }
 #fiche .pole { font-size: 12px; color: var(--doux); margin: 0 4px 8px; font-weight: 600; }
 #fiche .pole:empty { display: none; }
 #fiche ul { list-style: none; margin: 0; padding: 0 2px; display: grid; gap: 6px; }
-#fiche li { display: grid; grid-template-columns: 10px auto 1fr; grid-template-rows: auto auto; column-gap: 8px; font-size: 13px;
+#fiche li { border-left: 3px solid var(--pole) !important; display: grid; grid-template-columns: 10px auto 1fr; grid-template-rows: auto auto; column-gap: 8px; font-size: 13px;
   padding: 5px 7px; background: rgba(255, 255, 255, .55); border: 1px solid rgba(91, 96, 120, .18); border-radius: 6px; }
 #fiche li i { width: 10px; height: 10px; border-radius: 50%; grid-row: 1; align-self: center; box-shadow: 0 0 6px currentColor; }
 #fiche li b { grid-row: 1; font-weight: 600; }
 #fiche li span { grid-row: 2; grid-column: 2 / -1; color: var(--doux); font-size: 12px; }
 #fiche li em { grid-row: 1; grid-column: 3; justify-self: end; font-style: normal; font-size: 12px; color: var(--doux); }
 #fiche .vide { font-size: 12px; color: var(--doux); margin: 0 4px; }
-#fiche .fermer { position: absolute; top: 0; right: 0; font-size: 14px; padding: 0; min-width: 22px; }
+#fiche .fermer { position: absolute; top: 3px; right: 8px; font-size: 14px; padding: 0; min-width: 24px; }
 #fiche .entrer { margin-top: 10px; width: 100%; }
 
 /* ---------- infobulles et barres d'aide ---------- */
@@ -127,6 +171,7 @@ body.en-visite .consigne-visite { display: block; }
 
 /* minimap, en haut à droite */
 #minimap { position: absolute; top: 14px; right: 14px; width: 252px; pointer-events: auto; text-align: center; }
+#minimap .sf-titre { margin: 0 0 8px; }
 #minimap canvas { display: block; width: 208px; height: 208px; margin: 0 auto; image-rendering: pixelated;
   border: 2px solid #2b3054; border-radius: 4px; box-shadow: inset 0 0 0 1px #aac3e7; }
 #minimap .lieu { margin: 6px 0 8px; font-size: 12px; font-weight: 600; color: var(--encre); min-height: 15px; }
@@ -135,7 +180,7 @@ body.en-visite .consigne-visite { display: block; }
 /* visite en pause */
 #reprendre { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(20, 24, 48, .45); z-index: 8; cursor: pointer; }
 #reprendre[hidden] { display: none; }
-#reprendre .carte { text-align: center; display: grid; gap: 8px; cursor: default; min-width: 260px; }
+#reprendre .carte { text-align: center; display: grid; gap: 8px; cursor: default; min-width: 280px; padding-top: 46px; }
 #reprendre .carte p { margin: 0 0 4px; font-size: 13px; color: var(--doux); }
 
 /* ---------- fenêtre d'un agent ---------- */
@@ -143,30 +188,31 @@ body.en-visite .consigne-visite { display: block; }
 /* plus grande pendant une discussion ou une tâche */
 #agent.large { grid-template-columns: minmax(0, 720px); }
 #agent[hidden] { display: none; }
-#agent .carte { position: relative; width: 100%; max-height: calc(100vh - 28px); overflow: auto; display: flex; flex-direction: column; }
-/* en-tête : titre à gauche, bouton fermer bien à part à droite */
-#agent .entete { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 6px; }
-#agent .entete .sf-titre { flex: 1; min-width: 0; margin-right: 0; margin-bottom: 0; }
-#agent .fermer { flex: none; font-size: 16px; padding: 0; min-width: 30px; margin-top: -4px; }
+#agent .carte { width: 100%; max-height: calc(100vh - 28px); display: flex; flex-direction: column; }
+#agent .defile { overflow: auto; overflow-x: hidden; min-height: 0; flex: 1; margin: 0 -6px; padding: 0 6px 2px; }
+/* prénom dans l'onglet coloré, bouton fermer tout à droite, dans la partie grise */
+#agent .fermer { position: absolute; top: 3px; right: 10px; font-size: 16px; padding: 0; min-width: 30px; }
+#agent .poste { margin: 0 4px 2px; font-size: 15px; font-weight: 600; color: var(--encre); }
 #agent .qui { display: flex; align-items: center; gap: 8px; margin: 0 4px 10px; font-size: 12.5px; color: var(--doux); }
 #agent .qui i { width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 6px currentColor; }
 #agent .qui .pole { font-weight: 600; }
 #agent .qui em { margin-left: auto; font-style: normal; }
 #agent .choix { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 2px 10px; }
-#agent .choix [aria-selected="true"] { border-image-source: url("../ui/kenney/ui-pack-sci-fi/bouton-jaune.png"); color: #3b2a00; text-shadow: 0 1px 0 rgba(255, 255, 255, .45); }
+#agent .choix .sf-bouton { border-image-source: url("../ui/kenney/ui-pack-sci-fi/bouton-gris.png"); color: var(--encre); text-shadow: none; }
+#agent .choix .sf-bouton[aria-selected="true"] { border-image-source: var(--bouton); color: var(--sur); text-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
 #agent .message { margin: 0 4px 10px; padding: 7px 10px; font-size: 12.5px; border-radius: 6px; background: #fde9c8; color: #7c2d12; }
 #agent .note { margin: 6px 4px 2px; font-size: 11.5px; color: var(--doux); }
 #agent form { margin: 0 2px; }
 #agent input, #agent textarea { width: 100%; font: 13px/1.45 var(--texte); color: var(--encre); padding: 7px 9px; resize: vertical;
   background: rgba(255, 255, 255, .85); border: 1px solid rgba(91, 96, 120, .35); border-radius: 6px; }
-#agent input:focus, #agent textarea:focus { outline: 2px solid var(--bleu); outline-offset: 0; }
+#agent input:focus, #agent textarea:focus { outline: 2px solid var(--pole); outline-offset: 0; }
 #agent .ecrire { display: flex; gap: 6px; align-items: center; }
 #agent .confier { display: grid; gap: 8px; }
 /* discussion */
 #agent .fil { list-style: none; margin: 0 2px 8px; padding: 6px; display: flex; flex-direction: column; gap: 6px; min-height: 120px; max-height: 42vh; overflow: auto;
   background: rgba(255, 255, 255, .45); border: 1px solid rgba(91, 96, 120, .18); border-radius: 6px; }
 #agent .fil li { max-width: 86%; padding: 6px 10px; font-size: 13px; line-height: 1.45; border-radius: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
-#agent .fil li.moi { align-self: flex-end; background: #1c9be0; color: #fff; border-bottom-right-radius: 3px; }
+#agent .fil li.moi { align-self: flex-end; background: var(--pole); color: var(--sur); border-bottom-right-radius: 3px; }
 #agent .fil li.agent { align-self: flex-start; background: #fff; border: 1px solid rgba(91, 96, 120, .2); border-bottom-left-radius: 3px; }
 #agent .fil li.attente { color: var(--doux); font-style: italic; }
 #agent .fil li.erreur { align-self: center; background: #fde9c8; color: #7c2d12; font-size: 12px; }
@@ -179,7 +225,7 @@ body.en-visite .consigne-visite { display: block; }
 #agent .journal { list-style: none; margin: 0 0 8px; padding: 6px 8px; max-height: 24vh; overflow: auto; font-size: 12px; font-variant-numeric: tabular-nums;
   background: var(--sombre); color: #cfe3f5; border-radius: 6px; display: grid; gap: 2px; }
 #agent .journal:empty { display: none; }
-#agent .journal b { color: #ffc600; font-weight: 600; }
+#agent .journal b { color: color-mix(in srgb, var(--pole) 55%, #fff); font-weight: 600; }
 #agent .fin h3 { font-family: var(--sf); font-weight: normal; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--encre); margin: 10px 2px 4px; }
 #agent .compte-rendu { font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30vh; overflow: auto; padding: 8px 10px;
   background: rgba(255, 255, 255, .6); border: 1px solid rgba(91, 96, 120, .18); border-radius: 6px; }
