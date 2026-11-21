@@ -35,6 +35,7 @@ const DUREE_MAX_TACHE = 30 * 60e3; // une tâche est arrêtée au bout de 30 min
 const OUTILS_TACHE = ['Read', 'Write', 'Edit', 'WebSearch', 'WebFetch'];
 const BUDGET_CORBEILLE = 0.5;      // dollars pour mettre à la corbeille les mails que tu as validés
 const CNX = require('./connecteurs.js');
+const OUTILS = require('./outils-mcp.js');
 
 // Jeton secret, recréé à chaque démarrage : il est glissé dans la page du QG et exigé par l'API.
 // Une page d'un autre site ne peut pas le lire (même origine obligatoire), donc ne peut pas appeler l'API.
@@ -315,6 +316,13 @@ async function api(req, res, url) {
   if (req.method === 'GET' && p === '/api/etat') {
     const connecteurs = Object.fromEntries(Object.keys(EQUIPE).filter(CNX.aDesConnecteurs).map(id => [id, CNX.connecteursDe(id)]));
     return json(res, 200, { claude: !!CLAUDE, enCours: enCours().map(t => ({ id: t.id, agent: t.agent, mode: t.mode, debut: t.debut, resume: t.resume, derniere: t.derniere })), max: TACHES_MAX, connecteurs });
+  }
+
+  // onglet « Outils » : nom et état de chaque connecteur (claude mcp list), jamais d'adresse, de commande ni d'erreur
+  if (req.method === 'GET' && p === '/api/outils') {
+    if (!CLAUDE) return json(res, 503, { erreur: 'Claude Code est introuvable sur cet ordinateur.' });
+    const r = await OUTILS.lireConnecteurs(CLAUDE, RACINE, url.searchParams.get('verifier') === '1');
+    return json(res, 200, { date: r.date, connecteurs: r.liste, echec: !!r.erreur });
   }
 
   if (req.method === 'POST' && (p === '/api/discuter' || p === '/api/taches')) {
