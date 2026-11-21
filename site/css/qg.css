@@ -4,6 +4,13 @@
 
 @font-face { font-family: "Kenney Future"; src: url("../ui/kenney/ui-pack-sci-fi/kenney-future.ttf") format("truetype"); font-display: swap; }
 @font-face { font-family: "Kenney Future Narrow"; src: url("../ui/kenney/ui-pack-sci-fi/kenney-future-narrow.ttf") format("truetype"); font-display: swap; }
+/* Inter (SIL Open Font License), enregistrée dans le projet : police de tout le texte hors titres */
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap;
+  src: url("../ui/inter/inter-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap;
+  src: url("../ui/inter/inter-latin-ext-wght-normal.woff2") format("woff2");
+  unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 
 :root {
   --encre: #2b2f45;
@@ -14,11 +21,12 @@
   --ombre: 0 8px 24px rgba(20, 30, 60, .28);
   --sf: "Kenney Future", "Segoe UI", system-ui, sans-serif;
   --sf-etroit: "Kenney Future Narrow", "Segoe UI", system-ui, sans-serif;
+  --texte: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   --ui: url("../ui/kenney/ui-pack-sci-fi/");
 }
 * { box-sizing: border-box; }
-/* tout le texte du QG est en police sci-fi : Kenney Future Narrow, et Kenney Future pour les titres et boutons */
-html, body { margin: 0; height: 100%; overflow: hidden; font-family: var(--sf-etroit); color: var(--encre); letter-spacing: .02em; }
+/* titres en police sci-fi (Kenney Future, classe .sf-titre) ; tout le reste en Inter */
+html, body { margin: 0; height: 100%; overflow: hidden; font-family: var(--texte); color: var(--encre); }
 body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 #c { position: fixed; inset: 0; display: block; touch-action: none; }
 .sf-police { font-family: var(--sf); letter-spacing: .04em; }
@@ -40,16 +48,16 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 .sf-bouton {
   border-style: solid; border-width: 9px 14px 11px; padding: 0 2px;
   border-image: url("../ui/kenney/ui-pack-sci-fi/bouton-bleu.png") 10 14 12 fill / 9px 14px 11px stretch;
-  background: transparent; color: #fff; font-family: var(--sf); font-size: 12px; letter-spacing: .05em; line-height: 14px;
+  background: transparent; color: #fff; font-family: var(--texte); font-weight: 600; font-size: 12.5px; line-height: 14px;
   cursor: pointer; text-shadow: 0 1px 0 rgba(0, 40, 90, .5); transition: filter .12s, transform .12s;
 }
 .sf-bouton:hover, .sf-bouton:focus-visible { filter: brightness(1.12); outline: none; transform: translateY(-1px); }
 .sf-bouton:active { transform: translateY(1px); }
 .sf-bouton.principal { border-image-source: url("../ui/kenney/ui-pack-sci-fi/bouton-jaune.png"); color: #3b2a00; text-shadow: 0 1px 0 rgba(255, 255, 255, .45); }
 .sf-bouton.gris { border-image-source: url("../ui/kenney/ui-pack-sci-fi/bouton-gris.png"); color: var(--encre); text-shadow: none; }
-.sf-bulle { background: var(--sombre); color: #e7f2fa; font-family: var(--sf-etroit); border: 1px solid rgba(170, 195, 231, .55);
+.sf-bulle { background: var(--sombre); color: #e7f2fa; font-family: var(--texte); border: 1px solid rgba(170, 195, 231, .55);
   border-radius: 999px; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); }
-.sf-lien { font-family: var(--sf); font-size: 11px; letter-spacing: .04em; color: var(--doux); text-transform: uppercase; }
+.sf-lien { font-family: var(--texte); font-size: 12px; color: var(--doux); }
 
 /* ---------- chargement ---------- */
 #chargement { position: fixed; inset: 0; display: grid; place-content: center; gap: 12px; text-align: center;
@@ -67,9 +75,9 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 .panneau p { font-size: 12px; margin: 0 2px 8px; color: var(--doux); }
 #legende { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 6px; }
 #legende button { display: flex; align-items: center; gap: 7px; border: 1px solid transparent; background: transparent; padding: 4px 6px;
-  border-radius: 6px; font-family: var(--sf-etroit); font-size: 12px; color: var(--encre); cursor: pointer; text-align: left; }
+  border-radius: 6px; font-family: var(--texte); font-size: 12.5px; color: var(--encre); cursor: pointer; text-align: left; }
 #legende button:hover, #legende button:focus-visible { background: rgba(28, 155, 224, .12); border-color: rgba(28, 155, 224, .45); outline: none; }
-#legende button.qg { grid-column: 1 / -1; font-family: var(--sf); font-size: 11px; letter-spacing: .04em; }
+#legende button.qg { grid-column: 1 / -1; font-weight: 600; }
 #legende i { width: 12px; height: 12px; border-radius: 2px; flex: none; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .2), 0 0 0 2px rgba(255, 255, 255, .7); }
 .panneau .lune { margin: 8px 2px 0; font-size: 11px; color: var(--doux); }
 .panneau .lune::before { content: "☾ "; color: var(--bleu); }
@@ -80,13 +88,13 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 #fiche { position: fixed; left: 14px; bottom: 50px; width: 316px; max-width: calc(100vw - 28px); max-height: 48vh; overflow: auto; }
 #fiche .titre { --c: var(--bleu); margin-right: 38px; }
 #fiche .titre::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 7px; border-radius: 2px; background: var(--c); box-shadow: 0 0 0 2px rgba(255, 255, 255, .85); }
-#fiche .pole { font-size: 12px; color: var(--doux); margin: 0 4px 8px; font-family: var(--sf); letter-spacing: .04em; text-transform: uppercase; }
+#fiche .pole { font-size: 12px; color: var(--doux); margin: 0 4px 8px; font-weight: 600; }
 #fiche .pole:empty { display: none; }
 #fiche ul { list-style: none; margin: 0; padding: 0 2px; display: grid; gap: 6px; }
 #fiche li { display: grid; grid-template-columns: 10px auto 1fr; grid-template-rows: auto auto; column-gap: 8px; font-size: 13px;
   padding: 5px 7px; background: rgba(255, 255, 255, .55); border: 1px solid rgba(91, 96, 120, .18); border-radius: 6px; }
 #fiche li i { width: 10px; height: 10px; border-radius: 50%; grid-row: 1; align-self: center; box-shadow: 0 0 6px currentColor; }
-#fiche li b { grid-row: 1; font-family: var(--sf); font-weight: normal; letter-spacing: .03em; }
+#fiche li b { grid-row: 1; font-weight: 600; }
 #fiche li span { grid-row: 2; grid-column: 2 / -1; color: var(--doux); font-size: 12px; }
 #fiche li em { grid-row: 1; grid-column: 3; justify-self: end; font-style: normal; font-size: 12px; color: var(--doux); }
 #fiche .vide { font-size: 12px; color: var(--doux); margin: 0 4px; }
@@ -98,7 +106,7 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 #survol { border-color: var(--c, rgba(170, 195, 231, .55)); }
 .aide { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 12px; padding: 6px 14px;
   white-space: nowrap; max-width: calc(100vw - 220px); overflow: hidden; text-overflow: ellipsis; }
-#fps { position: fixed; bottom: 12px; right: 14px; font-family: var(--sf-etroit); font-size: 11px; padding: 4px 9px; border-radius: 6px; }
+#fps { position: fixed; bottom: 12px; right: 14px; font-family: var(--texte); font-size: 11px; font-variant-numeric: tabular-nums; padding: 4px 9px; border-radius: 6px; }
 
 /* ---------- consignes selon le mode ---------- */
 .consigne-visite { display: none; }
@@ -109,8 +117,8 @@ body.en-visite .consigne-visite { display: block; }
 #visite { position: fixed; inset: 0; pointer-events: none; }
 #visite .viseur { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px;
   background: url("../ui/kenney/ui-pack-sci-fi/viseur.png") center / contain no-repeat; opacity: .9; }
-#invite { position: absolute; left: 50%; top: calc(50% + 34px); transform: translateX(-50%); font-family: var(--sf);
-  font-size: 12px; letter-spacing: .04em; padding: 6px 14px; white-space: nowrap; }
+#invite { position: absolute; left: 50%; top: calc(50% + 34px); transform: translateX(-50%); font-weight: 600;
+  font-size: 12.5px; padding: 6px 14px; white-space: nowrap; }
 .aide-visite { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 12px; padding: 6px 14px;
   white-space: nowrap; max-width: calc(100vw - 220px); overflow: hidden; text-overflow: ellipsis; }
 .si-glisser { display: none; }
@@ -121,7 +129,7 @@ body.en-visite .consigne-visite { display: block; }
 #minimap { position: absolute; top: 14px; right: 14px; width: 252px; pointer-events: auto; text-align: center; }
 #minimap canvas { display: block; width: 208px; height: 208px; margin: 0 auto; image-rendering: pixelated;
   border: 2px solid #2b3054; border-radius: 4px; box-shadow: inset 0 0 0 1px #aac3e7; }
-#minimap .lieu { margin: 6px 0 8px; font-size: 11px; color: var(--encre); text-transform: uppercase; min-height: 14px; }
+#minimap .lieu { margin: 6px 0 8px; font-size: 12px; font-weight: 600; color: var(--encre); min-height: 15px; }
 #minimap .haut { width: 100%; }
 
 /* visite en pause */

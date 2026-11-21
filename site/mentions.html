@@ -19,8 +19,9 @@
   section h2.sf-titre { margin-bottom: 10px; }
   .meta { font-size: 13px; color: var(--doux); margin: 0 0 8px; }
   .meta a { color: #1d6fb3; }
-  .licence { display: inline-block; font-family: var(--sf); font-size: 10px; letter-spacing: .05em; padding: 2px 8px; border-radius: 999px; background: #c9f0d6; color: #14532d; }
+  .licence { display: inline-block; font-weight: 600; font-size: 11px; padding: 1px 8px; border-radius: 999px; background: #c9f0d6; color: #14532d; }
   .licence.mit { background: #cfe4ff; color: #1e3a8a; }
+  .licence.ofl { background: #fde9c8; color: #7c2d12; }
   section p { font-size: 14px; margin: 0 0 8px; }
   ul.modeles { columns: 3 180px; margin: 8px 0 4px; padding-left: 18px; font-size: 13px; color: var(--doux); }
   code { font-size: 12px; background: rgba(43, 47, 69, .08); padding: 1px 5px; border-radius: 4px; }
@@ -36,9 +37,18 @@
   <section class="sf-panneau">
     <h2 class="sf-titre">Interface · Kenney, « UI Pack: Sci-fi » (version 2.0)</h2>
     <p class="meta">Auteur : Kenney (Kenney Vleugels) · <a href="https://kenney.nl/assets/ui-pack-sci-fi">kenney.nl/assets/ui-pack-sci-fi</a> · <span class="licence">CC0 1.0 · domaine public</span></p>
-    <p>Tout l'habillage de l'interface : panneaux à vis, barres de titre, boutons, jauge de chargement, viseur de la visite, et les polices <b>Kenney Future</b> et <b>Kenney Future Narrow</b> (menus, étiquettes et enseignes des pôles). Certains fichiers ont été renommés en français. Fichier de licence d'origine : <code>ui/kenney/ui-pack-sci-fi/License.txt</code>.</p>
+    <p>Tout l'habillage de l'interface : panneaux à vis, barres de titre, boutons, jauge de chargement, viseur de la visite, et les polices <b>Kenney Future</b> et <b>Kenney Future Narrow</b> (titres, noms des salles, des agents et des pôles). Certains fichiers ont été renommés en français. Fichier de licence d'origine : <code>ui/kenney/ui-pack-sci-fi/License.txt</code>.</p>
     <ul class="modeles">
       <li>button_rectangle_depth (panneau)</li><li>bar_square_gloss_large bleu (barre-titre)</li><li>bar_round_gloss_large bleu, jaune, gris (boutons)</li><li>bar_shadow_square_large (jauge-fond)</li><li>bar_square_gloss_large jaune (jauge-plein)</li><li>crosshair_color_a (viseur)</li><li>Kenney Future.ttf</li><li>Kenney Future Narrow.ttf</li>
+    </ul>
+  </section>
+
+  <section class="sf-panneau">
+    <h2 class="sf-titre">Police · Inter (version 4)</h2>
+    <p class="meta">Auteurs : Rasmus Andersson et The Inter Project Authors · <a href="https://rsms.me/inter/">rsms.me/inter</a> · <span class="licence ofl">SIL Open Font License 1.1</span></p>
+    <p>Police de tout le texte hors titres : panneaux, fiches, boutons, bulles, postes et états des agents, phrases des enseignes. Fichiers repris du paquet <code>@fontsource-variable/inter</code> (version 5.0.18), en police variable. Texte complet de la licence : <code>ui/inter/LICENSE.txt</code>.</p>
+    <ul class="modeles">
+      <li>inter-latin-wght-normal.woff2</li><li>inter-latin-ext-wght-normal.woff2</li>
     </ul>
   </section>
 
@@ -95,10 +105,10 @@
 
   <section class="sf-panneau">
     <h2 class="sf-titre">Le reste</h2>
-    <p>Le bâtiment, les salles, les agents, les écrans, les mascottes Octet et Archibald, l'île, le Coffre, la Lune et son calcul de phase sont dessinés directement dans le code du QG. Le logo JILL KORP utilise la police de ton système.</p>
+    <p>Le bâtiment, les salles, les agents, les écrans, les mascottes Octet et Archibald, l'île, le Coffre, la Lune et son calcul de phase sont dessinés directement dans le code du QG. Le logo JILL KORP est écrit en Kenney Future.</p>
   </section>
 
-  <footer>CC0 : les auteurs ont renoncé à leurs droits ; créditer n'est pas obligatoire mais on le fait avec plaisir. Merci à Kenney, à ses co-auteurs et à l'équipe three.js.</footer>
+  <footer>CC0 : les auteurs ont renoncé à leurs droits ; créditer n'est pas obligatoire mais on le fait avec plaisir. Merci à Kenney, à ses co-auteurs, à l'équipe three.js et aux auteurs d'Inter. La licence SIL OFL d'Inter permet d'utiliser et de redistribuer la police librement, à condition de garder sa licence avec elle.</footer>
 </main>
 </body>
 </html>

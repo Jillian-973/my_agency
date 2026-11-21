@@ -42,7 +42,7 @@ export function etiquetteAgent(data, couleurPole, parent) {
   const s = sprite(texture(c), 1, 1);
   const item = { sprite: s, base: new THREE.Vector3(), data, canvas: c };
   item.dessiner = () => {
-    const nomF = '42px "Kenney Future", system-ui, sans-serif', posteF = '30px "Kenney Future Narrow", system-ui, sans-serif', etatF = '28px "Kenney Future Narrow", system-ui, sans-serif';
+    const nomF = '42px "Kenney Future", system-ui, sans-serif', posteF = '500 30px Inter, system-ui, sans-serif', etatF = '600 28px Inter, system-ui, sans-serif';   // nom en sci-fi, le reste en Inter
     g.font = nomF; const w1 = g.measureText(data.prenom).width;
     g.font = posteF; const w2 = g.measureText(data.poste).width;
     g.font = etatF; const w3 = g.measureText(data.etat).width + 34;

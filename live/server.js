@@ -28,6 +28,11 @@ const TYPES = {
   '.jpeg': 'image/jpeg',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
+  // polices : sans le bon type, avec « nosniff », certains navigateurs les refusent et affichent la police système
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
   '.txt': 'text/plain; charset=utf-8',
   '': 'text/plain; charset=utf-8',
 };

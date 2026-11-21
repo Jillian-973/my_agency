@@ -124,8 +124,8 @@ function fusionner(racine, dest, garder = false) {
 
 /* ================= Construction ================= */
 const barre = $('#chargement .barre i');
-// polices sci-fi du kit Kenney : chargées avant de dessiner les étiquettes et les enseignes
-await Promise.all(['46px "Kenney Future"', '46px "Kenney Future Narrow"'].map(f => document.fonts.load(f).catch(() => {})));
+// polices (Kenney Future pour les titres, Inter pour le reste) : chargées avant de dessiner étiquettes et enseignes
+await Promise.all(['46px "Kenney Future"', '46px "Kenney Future Narrow"', '500 30px Inter', '600 30px Inter'].map(f => document.fonts.load(f).catch(() => {})));
 await chargerModeles((k) => { barre.style.width = Math.round(k * 100) + '%'; });
 const { facade, zones, world, islet, portes, sol: hauteurSol } = construireMonde(scene);
 // les collisions sont relevées avant la fusion, tant que chaque mur et chaque meuble est encore un objet à part
