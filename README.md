@@ -27,7 +27,7 @@ Pour parler aux agents, [Claude Code](https://claude.com/claude-code) doit être
   - **Discuter** : Claude Code répond sans aucun outil, avec la personnalité de l'agent (son prénom, son poste et ses missions lus dans `EQUIPE.md`). Rien n'est enregistré.
   - **Confier une tâche** : une vraie session Claude Code (modèle Sonnet) travaille dans `live/travaux/<Prénom>/`, avec seulement la lecture, l'écriture et la modification de fichiers et la recherche web. 2 $ maximum par tâche, 4 tâches en même temps au plus. Pendant ce temps l'agent tape à son bureau et la fenêtre montre seulement le nom de chaque outil utilisé et du fichier touché ; à la fin, son compte rendu, les fichiers créés et un bouton pour ouvrir son dossier.
   - **Sécurité** : le serveur n'écoute que sur `127.0.0.1` et refuse toute demande qui ne vient pas de la page du QG (adresse, origine et jeton secret recréé à chaque démarrage). Les travaux des agents restent sur cet ordinateur (`live/travaux/` n'est pas versionné).
-- **Interface** : panneaux, boutons et viseur dans le style sci-fi de Kenney ; titres en Kenney Future, tout le reste en Inter.
+- **Interface** : panneaux, boutons et viseur dans le style sci-fi de Kenney ; titres en Kenney Future, tout le reste en Inter. Chaque fenêtre a sa forme (en-tête doré pour le panneau principal, en-tête à la couleur du pôle pour la fiche d'une salle, onglet en biseau pour un agent, verre aux coins coupés pour la minimap, onglet à encoche pour la pause), et la fiche, la fenêtre d'un agent et les boutons prennent la couleur de son pôle.
 
 ## Organisation
 
@@ -46,7 +46,8 @@ site/              le QG (servi tel quel)
   js/planetes.js   planètes en orbite et Lune à sa vraie phase
   js/minimap.js    plan affiché en haut à droite pendant la visite
   js/fenetre-agent.js fenêtre d'un agent : discuter, confier une tâche, suivre son travail
-  ui/kenney/       interface sci-fi et tuiles de la minimap (Kenney, CC0), polices Kenney Future
+  ui/kenney/       interface sci-fi et tuiles de la minimap (Kenney, CC0), polices Kenney Future,
+                   variantes aux couleurs des pôles (ui-pack-sci-fi/couleurs)
   js/modeles.js    chargement des modèles Kenney
   js/outils.js     matériaux, formes et textures communes
   js/main.js       caméra, interactions, optimisation, boucle d'affichage
