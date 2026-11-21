@@ -17,8 +17,8 @@
   --ui: url("../ui/kenney/ui-pack-sci-fi/");
 }
 * { box-sizing: border-box; }
-/* textes courants en police système (lisibles) ; titres, boutons, bulles et étiquettes en Kenney Future */
-html, body { margin: 0; height: 100%; overflow: hidden; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; color: var(--encre); }
+/* tout le texte du QG est en police sci-fi : Kenney Future Narrow, et Kenney Future pour les titres et boutons */
+html, body { margin: 0; height: 100%; overflow: hidden; font-family: var(--sf-etroit); color: var(--encre); letter-spacing: .02em; }
 body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 #c { position: fixed; inset: 0; display: block; touch-action: none; }
 .sf-police { font-family: var(--sf); letter-spacing: .04em; }
@@ -98,7 +98,7 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 #survol { border-color: var(--c, rgba(170, 195, 231, .55)); }
 .aide { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 12px; padding: 6px 14px;
   white-space: nowrap; max-width: calc(100vw - 220px); overflow: hidden; text-overflow: ellipsis; }
-#fps { position: fixed; bottom: 12px; right: 14px; font: 11px ui-monospace, monospace; padding: 4px 9px; border-radius: 6px; }
+#fps { position: fixed; bottom: 12px; right: 14px; font-family: var(--sf-etroit); font-size: 11px; padding: 4px 9px; border-radius: 6px; }
 
 /* ---------- consignes selon le mode ---------- */
 .consigne-visite { display: none; }

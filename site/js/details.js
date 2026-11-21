@@ -196,7 +196,7 @@ function texAffiche(genre) {
     if (genre === 'film') { const g = c.createLinearGradient(0, 0, 0, 176); g.addColorStop(0, '#7f1d1d'); g.addColorStop(1, '#111827'); c.fillStyle = g; c.fillRect(0, 0, 128, 176); c.fillStyle = '#fde68a'; c.beginPath(); c.arc(64, 70, 30, 0, 7); c.fill(); c.fillStyle = '#f8fafc'; c.fillRect(20, 130, 88, 8); c.fillRect(34, 146, 60, 5); }
     else if (genre === 'montagne') { c.fillStyle = '#7dd3fc'; c.fillRect(0, 0, 128, 176); c.fillStyle = '#f8fafc'; c.beginPath(); c.arc(96, 40, 16, 0, 7); c.fill(); c.fillStyle = '#334155'; c.beginPath(); c.moveTo(0, 176); c.lineTo(45, 70); c.lineTo(80, 120); c.lineTo(105, 90); c.lineTo(128, 176); c.fill(); }
     else if (genre === 'pixel') { c.fillStyle = '#0b0420'; c.fillRect(0, 0, 128, 176); for (let i = 0; i < 40; i++) { c.fillStyle = pick(['#f43f5e', '#22d3ee', '#a3e635', '#facc15'], h); c.fillRect(Math.floor(h() * 16) * 8, Math.floor(h() * 22) * 8, 8, 8); } }
-    else if (genre === 'sport') { c.fillStyle = '#14b8a6'; c.fillRect(0, 0, 128, 176); c.fillStyle = '#f8fafc'; c.font = 'bold 26px sans-serif'; c.fillText('GO!', 36, 100); }
+    else if (genre === 'sport') { c.fillStyle = '#14b8a6'; c.fillRect(0, 0, 128, 176); c.fillStyle = '#f8fafc'; c.font = '24px "Kenney Future", sans-serif'; c.fillText('GO!', 36, 100); }
     else if (genre === 'carte') { c.fillStyle = '#e7d7b6'; c.fillRect(0, 0, 128, 176); c.fillStyle = '#86efac'; for (let i = 0; i < 6; i++) { c.beginPath(); c.arc(h() * 128, h() * 176, 12 + h() * 20, 0, 7); c.fill(); } c.strokeStyle = '#b91c1c'; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(10, 160); c.bezierCurveTo(40, 40, 90, 140, 118, 20); c.stroke(); }
     else { for (let i = 0; i < 6; i++) { c.fillStyle = pick(['#f472b6', '#a78bfa', '#fb923c', '#38bdf8', '#facc15', '#34d399'], h); c.fillRect(h() * 100, h() * 150, 30 + h() * 50, 30 + h() * 60); } }
   });
@@ -225,11 +225,11 @@ export function enseignePole(p, x, y, z, r, nom, phrase, couleur, w = 3.6) {
     c.fillStyle = fonce ? '#1f2937' : '#ffffff'; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.font = '104px "Kenney Future", system-ui, "Segoe UI", sans-serif';
     try { c.letterSpacing = '14px'; } catch (e) { /* sans letterSpacing */ }
-    c.fillText(nom.toUpperCase(), 512, 100);
+    c.fillText(nom.toUpperCase(), 512, 100, 960);    // largeur bornée : la police sci-fi est large
     try { c.letterSpacing = '0px'; } catch (e) { /* idem */ }
     c.font = '44px "Kenney Future Narrow", system-ui, "Segoe UI", sans-serif';
     c.fillStyle = fonce ? 'rgba(31,41,55,.85)' : 'rgba(255,255,255,.92)';
-    c.fillText(phrase, 512, 200);
+    c.fillText(phrase, 512, 200, 960);
   });
   const g = grp(p, x, y, z, r), h = w / 4;
   box(g, w + .06, h + .06, .04, 0, 0, 0, shade(couleur, .25));
