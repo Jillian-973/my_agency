@@ -44,14 +44,16 @@ export function construireCollisions(racines, portes) {
     return (x - cx) ** 2 + (z - cz) ** 2 < r * r;
   };
 
-  /** Vrai si un visiteur de rayon r, pieds à la hauteur `pieds`, heurte un mur, un meuble ou une porte fermée en (x, z). */
-  function bloque(x, z, r, pieds) {
+  /** Vrai si un visiteur de rayon r, pieds à la hauteur `pieds`, heurte un mur, un meuble ou une porte fermée en (x, z).
+   *  sansPortes : les portes ne comptent pas (les agents qui marchent vers une réunion les ouvrent en passant). */
+  function bloque(x, z, r, pieds, sansPortes = false) {
     const y0 = pieds + .3, y1 = pieds + 1.7;
     for (let i = Math.floor((x - r) / CASE); i <= Math.floor((x + r) / CASE); i++)
       for (let j = Math.floor((z - r) / CASE); j <= Math.floor((z + r) / CASE); j++) {
         const liste = grille.get(cle(i, j)); if (!liste) continue;
         for (const n of liste) { const q = boites[n]; if (q.y1 < y0 || q.y0 > y1) continue; if (touche(q, x, z, r)) return true; }
       }
+    if (sansPortes) return false;
     for (const p of portes) {
       if (Math.abs(p.angle) > .35) continue;                              // porte (assez) ouverte : on passe
       const q = p.boite; if (q.y1 < y0 || q.y0 > y1) continue;

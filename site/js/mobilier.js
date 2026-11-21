@@ -56,12 +56,14 @@ export const A = (shirt, skin, hair, style, extra = {}) => ({ shirt, skin: SKIN[
  */
 export function personnage(p, x, z, r, s, pose = 'stand', etat = 'au travail') {
   const g = grp(p, x, 0, z, r);
+  g.userData.look = s;                              // apparence gardée : la réunion en refait une copie debout
   const pants = s.pants || '#334155', shoe = '#1f2937', skin = s.skin, shirt = s.shirt;
   if (pose === 'sit') {
     if (s.siege !== false) chair(g, 0, -.02, 0, s.chair || DARK);
     for (const sx of [-.11, .11]) { box(g, .17, .15, .44, sx, .42, .15, pants); box(g, .17, .4, .17, sx, .04, .34, pants); box(g, .18, .07, .25, sx, 0, .38, shoe); }
   } else {
-    for (const sx of [-.11, .11]) { box(g, .17, .5, .2, sx, .04, 0, pants); box(g, .18, .07, .27, sx, 0, .03, shoe); }
+    // debout : chaque jambe pivote à la hanche (pour marcher)
+    g.userData.jambes = [-.11, .11].map(sx => { const j = grp(g, sx, .54, 0); box(j, .17, .5, .2, 0, -.5, 0, pants); box(j, .18, .07, .27, 0, -.54, .03, shoe); return j; });
   }
   box(g, .5, .56, .3, 0, .52, 0, shirt);
   box(g, .2, .05, .02, 0, 1.0, .155, tint(shirt, .5));
@@ -73,6 +75,7 @@ export function personnage(p, x, z, r, s, pose = 'stand', etat = 'au travail') {
     else a.rotation.z = sx * .06;
     bras.push(a);
   }
+  if (pose !== 'sit') g.userData.brasDebout = bras;
   if (pose === 'sit' && etat === 'en pause') {
     bras[1].rotation.x = -1.9; bras[0].rotation.x = -.45;
     g.userData.tasse = cyl(bras[1], .055, .05, .13, 0, -.68, .02, '#ffffff', 8);
@@ -142,7 +145,13 @@ export function reglerTravail(pose, enTache) {
   if (!pose || pose.enTache === enTache) return;
   pose.enTache = enTache;
   pose.groupe.userData.tape = enTache || pose.agent.etat === 'au travail';
-  pose.etiquette.etat = enTache ? 'au travail' : null;
+  majEtiquette(pose);
+}
+/** État affiché sur l'étiquette : une tâche en cours passe avant la réunion, puis l'état habituel. */
+export function majEtiquette(pose) {
+  const etat = pose.enTache ? 'au travail' : pose.enReunion ? 'en réunion' : null, compact = !!pose.enReunion;
+  if (pose.etiquette.etat === etat && pose.etiquette.compact === compact) return;
+  pose.etiquette.etat = etat; pose.etiquette.compact = compact;
   pose.etiquette.dessiner();
 }
 

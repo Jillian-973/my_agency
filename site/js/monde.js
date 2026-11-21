@@ -557,7 +557,7 @@ export function construireMonde(scene) {
     sides: { n: 'part', w: 'part', s: 'f' }, doors: [{ side: 'n', off: 0 }], windows: { s: [-2.4, 2.4] },
     floor: { type: 'tile', c1: tint(P.phare.couleur, .66), c2: tint(P.phare.couleur, .8) }, wain: '#fcd34d', cap: '#ca8a04',
     fill(g) {
-      bigScreen(g, -.3, 1.0, -3.4, 0, 2.6, 1.2, 'seo');
+      bigScreen(g, 2.5, 1.0, -3.4, 0, 2.6, 1.2, 'seo');       // contre la cloison, à droite de la porte (qui reste dégagée)
       poste(g, -2.0, -1.6, Math.PI, 'seo', ag.sam, A(P.phare.couleur, 2, '#1a1a1a', 'short', { glasses: true }));
       poste(g, 1.4, -1.6, Math.PI, 'social', ag.emma, A(P.phare.couleur, 5, '#e5c07b', 'long'));
       poste(g, 2.4, 1.0, Math.PI, 'chart', ag.ravi, A(P.phare.couleur, 3, '#111111', 'short', { pants: '#1f2937' }));
@@ -568,7 +568,7 @@ export function construireMonde(scene) {
       tallPlant(g, -4.0, -3.4, .9); plant(g, 4.0, 3.4, .9);
       // grand nom du pôle sur la cloison, trophées en hauteur, mégaphone, magazines et tasses
       enseigne(g, -4.42, 1.25, -1.6, Math.PI / 2, 'phare', 2.8);
-      etagereMurale(g, 2.6, 1.7, -3.85, 0, 1.6, ['trophee', 'plante', 'trophee', 'livres'], 'phare');
+      etagereMurale(g, -2.4, 1.7, -3.85, 0, 1.6, ['trophee', 'plante', 'trophee', 'livres'], 'phare');
       const mega = grp(g, -1.4, .47, 2.25, .8); const cn = cyl(mega, .03, .1, .22, 0, 0, 0, '#facc15', 10); cn.rotation.z = Math.PI / 2; cn.position.set(0, .08, 0); box(mega, .04, .08, .04, -.08, 0, 0, '#1f2937');
       pileLivres(g, -1.8, .47, 2.45, 2, 'mag-phare'); tasse(g, -1.75, .47, 2.05, '#fde68a');
       horloge(g, -4.42, 1.95, 1.6, Math.PI / 2, '#ca8a04');

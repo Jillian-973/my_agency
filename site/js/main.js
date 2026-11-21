@@ -13,6 +13,7 @@ import { creerCiel, nomPhase, eclairage } from './planetes.js';
 import { creerMinimap } from './minimap.js';
 import { creerFenetreAgent } from './fenetre-agent.js';
 import { creerOnglets } from './onglets.js';
+import { creerReunion } from './reunion.js';
 import { POLES, ETATS } from './donnees.js';
 
 const $ = (s) => document.querySelector(s);
@@ -171,7 +172,15 @@ for (const a of agentsPoses) {
   a.groupe.getWorldPosition(posA);
   const z = zones.find(z => Math.abs(posA.x - z.x) <= z.w / 2 + .01 && Math.abs(posA.z - z.z) <= z.d / 2 + .01);
   a.zone = z ? z.id : null;
+  a.groupe.userData.poseAgent = a;
 }
+// réunion : les agents cochés dans l'onglet « Équipe » marchent jusqu'à la salle de réunion
+const reunion = creerReunion({
+  scene, zones, agentsPoses, sol: hauteurSol, collisions, portes,
+  ombres: () => { renderer.shadowMap.needsUpdate = true; },
+  quandChange: () => { onglets.redessiner(); if (zoneActive && !$('#fiche').hidden) afficherFiche(zoneActive); },
+});
+const lieuDe = (a) => (a.enReunion ? 'reunion' : a.zone);     // en réunion (ou en route), l'agent compte dans la salle de réunion
 
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 function zoneSous(x, y) {
@@ -181,16 +190,14 @@ function zoneSous(x, y) {
   return hit ? hit.object.userData.zone : null;
 }
 // Un agent sous le pointeur (son personnage ou son étiquette visible) : on peut cliquer dessus pour lui parler.
-const poseParGroupe = new Map(agentsPoses.map(a => [a.groupe, a]));
-const groupesAgents = agentsPoses.map(a => a.groupe);
 const visible = (o) => { for (let p = o; p; p = p.parent) if (!p.visible) return false; return !o.isSprite || o.material.opacity > .25; };
 function agentSous(v, cam = camera, loin = Infinity) {
   cam.updateMatrixWorld(); ray.setFromCamera(v, cam); ray.far = loin;
-  const hits = ray.intersectObjects(groupesAgents, true);
+  const hits = ray.intersectObjects(agentsPoses.map(a => a.corps || a.groupe), true);   // corps : l'agent debout ou assis en réunion
   ray.far = Infinity;
   for (const h of hits) {
     if (!visible(h.object)) continue;
-    for (let p = h.object; p; p = p.parent) if (poseParGroupe.has(p)) return poseParGroupe.get(p);
+    for (let p = h.object; p; p = p.parent) if (p.userData.poseAgent) return p.userData.poseAgent;
   }
   return null;
 }
@@ -225,7 +232,7 @@ function vueEnsemble() {
 function afficherFiche(z) {
   const f = $('#fiche');
   const pole = z.pole ? POLES[z.pole] : null;
-  const gens = agentsPoses.filter(a => a.zone === z.id);
+  const gens = agentsPoses.filter(a => lieuDe(a) === z.id);
   f.querySelector('.titre').textContent = z.nom;
   // couleurs du pôle de la salle (en-tête, bouton, liseré des agents) ; bleu d'origine pour les salles communes
   const cle = z.pole || (z.id === 'qg' ? 'qg' : '');
@@ -237,10 +244,11 @@ function afficherFiche(z) {
     li.tabIndex = 0; li.setAttribute('role', 'button'); li.title = `Parler à ${a.prenomEquipe || a.prenom}`;
     li.addEventListener('click', () => parlerA(pose));
     li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); parlerA(pose); } });
-    const dot = document.createElement('i'); dot.style.background = (ETATS[a.etat] || ETATS['en attente']).couleur;
+    const etatVu = pose.enTache ? 'au travail' : pose.enReunion ? 'en réunion' : a.etat;   // comme sur son étiquette
+    const dot = document.createElement('i'); dot.style.background = (ETATS[etatVu] || ETATS['en attente']).couleur;
     const nom = document.createElement('b'); nom.textContent = a.prenom;
     const poste = document.createElement('span'); poste.textContent = a.poste;
-    const etat = document.createElement('em'); etat.textContent = a.etat;
+    const etat = document.createElement('em'); etat.textContent = etatVu;
     li.append(dot, nom, poste, etat); ul.append(li);
   }
   f.querySelector('.vide').hidden = gens.length > 0;
@@ -270,8 +278,9 @@ function parlerA(pose) {
 }
 /* ================= Onglets du bas : « Pôles » (lieux un par un) et « Équipe » (ce que fait chacun) ================= */
 const onglets = creerOnglets({
-  zones, agentsPoses, allerVers, zoneActive: () => zoneActive,
+  zones, agentsPoses, allerVers, zoneActive: () => zoneActive, reunion,
   parler: (pose) => parlerA(pose),
+  apresSifflet: () => vueEnsemble(),
   desactive: () => fenetre.ouverte() || visite.actif(),
 });
 // minimap de la visite (en haut à droite) : plan du bureau, agents et visiteur
@@ -483,7 +492,7 @@ fpsEl.title = 'Carte graphique utilisée : ' + GPU;
 if (LOGICIEL) { renderer.shadowMap.enabled = false; pr = PR_MIN; renderer.setPixelRatio(pr); }
 
 // accès pratique depuis la console du navigateur (débogage)
-window.qg = { scene, camera, controls, zones, agents: agentsPoses, portes, allerVers, vueEnsemble, entrerDans, vueDuHaut, visite, onglets };
+window.qg = { scene, camera, controls, zones, agents: agentsPoses, portes, allerVers, vueEnsemble, entrerDans, vueDuHaut, visite, onglets, reunion, collisions, sol: hauteurSol };
 
 /* ================= Boucle ================= */
 const clock = new THREE.Clock();
@@ -492,6 +501,7 @@ function image() {
   const dt = Math.min(clock.getDelta(), .1), t = clock.elapsedTime;
   for (const a of anim) a.fn(t, dt);
   visite.mettreAJour(dt);
+  reunion.mettreAJour(dt);
   ciel.mettreAJour(t, visite.actif() ? visite.camera : camera);
   if (visite.actif()) {
     minimap.dessiner(visite.position(), visite.orientation());
