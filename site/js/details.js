@@ -86,6 +86,7 @@ const METIER = {
   bouclier: (g) => { const b = cyl(g, .07, .07, .015, 0, .07, 0, '#22c55e', 6); b.rotation.x = Math.PI / 2; b.position.set(0, .08, 0); box(g, .03, .02, .03, 0, 0, 0, '#1f2937'); box(g, .015, .06, .006, 0, .055, .01, '#f8fafc', false); },
   boiteOutils: (g) => { box(g, .26, .1, .13, 0, 0, 0, '#ef4444'); box(g, .14, .03, .02, 0, .1, 0, '#1f2937'); },
   bobine: (g) => { const b = cyl(g, .07, .07, .08, 0, 0, 0, '#a16207', 12); cyl(g, .055, .055, .082, 0, 0, 0, '#22c55e', 12); },
+  telecommande: (g) => { const t = grp(g, 0, 0, 0, -.5); box(t, .05, .018, .13, 0, 0, 0, '#1f2937'); box(t, .018, .004, .018, 0, .018, -.03, '#ef4444', false); box(t, .03, .003, .02, 0, .018, .02, '#94a3b8', false); },
   tabletteDessin: (g) => { const t = grp(g, 0, 0, 0, .1); box(t, .3, .012, .2, 0, 0, 0, '#111827'); box(t, .22, .003, .14, 0, .012, 0, '#334155'); const s = cyl(t, .006, .006, .15, .12, .03, .02, '#f8fafc', 5); s.rotation.z = 1.2; },
   nuancier: (g) => { const n = grp(g, 0, 0, 0, .4); ['#ef4444', '#f97316', '#facc15', '#22c55e', '#3b82f6', '#a855f7'].forEach((c, i) => { const f = box(n, .05, .004, .2, 0, i * .004, 0, c, false); f.rotation.y = (i - 2.5) * .18; }); },
   figurine: (g) => { cyl(g, .05, .05, .02, 0, 0, 0, '#1f2937', 10); const k = new THREE.Mesh(new THREE.TorusKnotGeometry(.035, .012, 40, 6), mat('#f97316')); k.position.y = .08; g.add(k); },
@@ -99,7 +100,7 @@ const METIER = {
 const METIER_PAR_AGENT = {
   lea: 'agenda', hugo: 'livres', maya: 'calculatrice', sacha: 'jumelles', iris: 'classeur', nour: 'tablette',
   theo: 'canard', jade: 'stickers', max: 'serveur', zoe: 'bouclier', ada: 'boiteOutils', basile: 'bobine',
-  lila: 'tabletteDessin', noe: 'nuancier', blaise: 'figurine', milo: 'disque', clara: 'clap', joss: 'miniatures',
+  lila: 'tabletteDessin', noe: 'nuancier', blaise: 'figurine', ines: 'telecommande', milo: 'disque', clara: 'clap', joss: 'miniatures',
   sam: 'loupe', emma: 'telephone', ravi: 'graphique',
 };
 

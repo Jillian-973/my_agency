@@ -13,8 +13,8 @@
   Missions : classer et résumer mes notes, articles et réunions dans Notion, tenir à jour la base de connaissances et les modèles de pages
   Outils : Notion
 - Maya · contrôleuse de gestion
-  Missions : tenir mes tableaux Excel (temps passé, coûts, abonnements, devis), repérer les dépenses inutiles
-  Outils : Excel, Notion
+  Missions : tenir mes tableaux Google Sheets (temps passé, coûts, abonnements, devis), repérer les dépenses inutiles
+  Outils : Google Sheets, Notion
 
 ## Pôle Radar (couleur : violet)
 - Sacha · veilleur concurrentiel
@@ -22,7 +22,7 @@
   Outils : web, Notion
 - Iris · analyste benchmark
   Missions : produire des benchmarks comparatifs par domaine (UX, tech, SEO, vidéo), maintenir des fiches comparatives réutilisables
-  Outils : web, Excel, Notion
+  Outils : web, Google Sheets, Notion
 - Nour · veilleuse tech et outils
   Missions : suivre les nouvelles versions de mes frameworks et les nouveaux outils, me proposer des alternatives moins chères ou gratuites
   Outils : web, GitHub
@@ -47,7 +47,7 @@
   Outils : JavaScript, TypeScript, GitHub
 - Basile · câbleur d'automatisations
   Missions : relier mes apps entre elles (Gmail, Notion, GitHub, Agenda), planifier les tâches récurrentes
-  Outils : connecteurs, tâches planifiées
+  Outils : connecteurs (Gmail, Google Agenda, Notion, Vercel, Cloudflare, Google Sheets), tâches planifiées
 
 ## Pôle Studio (couleur : rose)
 - Lila · directrice artistique et web designer
@@ -59,6 +59,9 @@
 - Blaise · artiste 3D (à la demande)
   Missions : créer des scènes et rendus 3D pour des mockups ou des visuels, automatiser les rendus répétitifs
   Outils : Blender
+- Inès · conceptrice de présentations et de dossiers
+  Missions : préparer mes présentations dans Google Slides, rédiger mes dossiers dans Google Docs (cahiers des charges, dossiers de conception)
+  Outils : Google Slides, Google Docs
 
 ## Pôle Montage (couleur : rouge)
 - Milo · dérusheur
@@ -79,8 +82,8 @@
   Missions : tenir le calendrier éditorial, rédiger les posts et les newsletters
   Outils : réseaux sociaux, outil d'emailing, Notion
 - Ravi · analyste de données
-  Missions : produire des rapports mensuels (trafic, campagnes, conversions), garder la trace de tout dans des tableaux Excel propres
-  Outils : Analytics, Excel
+  Missions : produire des rapports mensuels (trafic, campagnes, conversions), garder la trace de tout dans des tableaux Google Sheets propres
+  Outils : Analytics, Google Sheets
 
 ## Les lieux
 le Quartier Général (le bureau du CEO, où je lui parle et où il distribue les missions), la Tour de Contrôle (le Cabinet, où arrivent mails et agenda), le Radar (la salle des écrans pour la veille), l'Atelier (l'open space du code), la Forge (la cave aux outils), le Studio (une verrière lumineuse pour le design), la Salle de Projection (le montage vidéo), le Phare (le haut de la tour pour le SEO et le marketing), la Bibliothèque (la base Notion), le Coffre (clés API et accès, aucun agent n'y entre sans ma validation), le Toit-terrasse (brainstormings et bilans du vendredi), un café, une salle de réunion, une salle de sport, une salle d'arcade

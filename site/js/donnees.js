@@ -25,12 +25,12 @@ export const AGENTS = [
   { id: 'hugo', prenom: 'Hugo', poste: 'Archiviste', pole: 'cabinet', etat: 'au travail',
     missions: ['Classer et résumer notes, articles et réunions dans Notion', 'Tenir à jour la base de connaissances et les modèles de pages'], outils: ['Notion'] },
   { id: 'maya', prenom: 'Maya', poste: 'Contrôleuse de gestion', pole: 'cabinet', etat: 'en pause',
-    missions: ['Tenir les tableaux Excel (temps, coûts, abonnements, devis)', 'Repérer les dépenses inutiles'], outils: ['Excel', 'Notion'] },
+    missions: ['Tenir les tableaux Google Sheets (temps, coûts, abonnements, devis)', 'Repérer les dépenses inutiles'], outils: ['Google Sheets', 'Notion'] },
   // Pôle Radar
   { id: 'sacha', prenom: 'Sacha', poste: 'Veilleur concurrentiel', pole: 'radar', etat: 'au travail',
     missions: ['Surveiller chaque semaine sites, offres et contenus des concurrents', 'Livrer une note de veille d\'une page'], outils: ['Web', 'Notion'] },
   { id: 'iris', prenom: 'Iris', poste: 'Analyste benchmark', pole: 'radar', etat: 'au travail',
-    missions: ['Produire des benchmarks comparatifs (UX, tech, SEO, vidéo)', 'Maintenir des fiches comparatives réutilisables'], outils: ['Web', 'Excel', 'Notion'] },
+    missions: ['Produire des benchmarks comparatifs (UX, tech, SEO, vidéo)', 'Maintenir des fiches comparatives réutilisables'], outils: ['Web', 'Google Sheets', 'Notion'] },
   { id: 'nour', prenom: 'Nour', poste: 'Veilleuse tech et outils', pole: 'radar', etat: 'en attente',
     missions: ['Suivre les nouvelles versions des frameworks et les nouveaux outils', 'Proposer des alternatives moins chères ou gratuites'], outils: ['Web', 'GitHub'] },
   // Pôle Atelier
@@ -46,7 +46,7 @@ export const AGENTS = [
   { id: 'ada', prenom: 'Ada', poste: 'Forgeronne d\'outils', pole: 'forge', etat: 'au travail',
     missions: ['Transformer chaque tâche répétitive en script, CLI ou mini-app', 'Tenir le catalogue des outils avec leur mode d\'emploi'], outils: ['JavaScript', 'TypeScript', 'GitHub'] },
   { id: 'basile', prenom: 'Basile', poste: 'Câbleur d\'automatisations', pole: 'forge', etat: 'en pause',
-    missions: ['Relier les apps entre elles (Gmail, Notion, GitHub, Agenda)', 'Planifier les tâches récurrentes'], outils: ['Connecteurs', 'Tâches planifiées'] },
+    missions: ['Relier les apps entre elles (Gmail, Notion, GitHub, Agenda)', 'Planifier les tâches récurrentes'], outils: ['Connecteurs (Gmail, Google Agenda, Notion, Vercel, Cloudflare, Google Sheets)', 'Tâches planifiées'] },
   // Pôle Studio
   { id: 'lila', prenom: 'Lila', poste: 'Directrice artistique et web designer', pole: 'studio', etat: 'au travail',
     missions: ['Proposer des maquettes et des design systems', 'Garder la cohérence visuelle entre les projets'], outils: ['Figma'] },
@@ -54,6 +54,8 @@ export const AGENTS = [
     missions: ['Créer logos, visuels et déclinaisons pour les réseaux', 'Préparer les exports pour le web et l\'impression'], outils: ['Illustrator', 'Photoshop'] },
   { id: 'blaise', prenom: 'Blaise', poste: 'Artiste 3D (à la demande)', pole: 'studio', etat: 'en attente',
     missions: ['Créer des scènes et rendus 3D pour des mockups ou des visuels', 'Automatiser les rendus répétitifs'], outils: ['Blender'] },
+  { id: 'ines', prenom: 'Inès', poste: 'Conceptrice de présentations et de dossiers', pole: 'studio', etat: 'en attente',
+    missions: ['Préparer les présentations dans Google Slides', 'Rédiger les dossiers dans Google Docs (cahiers des charges, dossiers de conception)'], outils: ['Google Slides', 'Google Docs'] },
   // Pôle Montage
   { id: 'milo', prenom: 'Milo', poste: 'Dérusheur', pole: 'montage', etat: 'au travail',
     missions: ['Transcrire et trier les rushes, repérer les meilleurs passages', 'Poser des marqueurs et un plan de montage'], outils: ['Librairie GitHub vidéo', 'Transcription'] },
@@ -67,7 +69,7 @@ export const AGENTS = [
   { id: 'emma', prenom: 'Emma', poste: 'Contenu et réseaux sociaux', pole: 'phare', etat: 'en pause',
     missions: ['Tenir le calendrier éditorial', 'Rédiger les posts et les newsletters'], outils: ['Réseaux sociaux', 'Emailing', 'Notion'] },
   { id: 'ravi', prenom: 'Ravi', poste: 'Analyste de données', pole: 'phare', etat: 'au travail',
-    missions: ['Produire des rapports mensuels (trafic, campagnes, conversions)', 'Garder la trace de tout dans des tableaux Excel propres'], outils: ['Analytics', 'Excel'] },
+    missions: ['Produire des rapports mensuels (trafic, campagnes, conversions)', 'Garder la trace de tout dans des tableaux Google Sheets propres'], outils: ['Analytics', 'Google Sheets'] },
 ];
 
 // Le CEO de JILL KORP (hors pôles)
