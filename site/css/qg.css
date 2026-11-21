@@ -23,11 +23,17 @@
   --sf-etroit: "Kenney Future Narrow", "Segoe UI", system-ui, sans-serif;
   --texte: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   --ui: url("../ui/kenney/ui-pack-sci-fi/");
+  /* curseurs du pack sci-fi (pointe en 2,2) : flèche blanche, et flèche à anneau sur ce qui se clique */
+  --curseur: url("../ui/kenney/ui-pack-sci-fi/curseur.png") 2 2, auto;
+  --curseur-clic: url("../ui/kenney/ui-pack-sci-fi/curseur-clic.png") 2 2, pointer;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }   /* « hidden » l'emporte toujours sur les display: flex ou grid */
 /* titres en police sci-fi (Kenney Future, classe .sf-titre) ; tout le reste en Inter */
-html, body { margin: 0; height: 100%; overflow: hidden; font-family: var(--texte); color: var(--encre); }
+html, body { margin: 0; height: 100%; overflow: hidden; font-family: var(--texte); color: var(--encre); cursor: var(--curseur); }
+button, a, summary, label, [role="button"], [role="tab"], #c.clic { cursor: var(--curseur-clic); }
+input, textarea { cursor: text; }
+button:disabled { cursor: var(--curseur); }
 body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 #c { position: fixed; inset: 0; display: block; touch-action: none; }
 .sf-police { font-family: var(--sf); letter-spacing: .04em; }
@@ -50,7 +56,7 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
   border-style: solid; border-width: 9px 14px 11px; padding: 0 2px;
   border-image: url("../ui/kenney/ui-pack-sci-fi/bouton-bleu.png") 10 14 12 fill / 9px 14px 11px stretch;
   background: transparent; color: #fff; font-family: var(--texte); font-weight: 600; font-size: 12.5px; line-height: 14px;
-  cursor: pointer; text-shadow: 0 1px 0 rgba(0, 40, 90, .5); transition: filter .12s, transform .12s;
+  cursor: var(--curseur-clic); text-shadow: 0 1px 0 rgba(0, 40, 90, .5); transition: filter .12s, transform .12s;
 }
 .sf-bouton:hover, .sf-bouton:focus-visible { filter: brightness(1.12); outline: none; transform: translateY(-1px); }
 .sf-bouton:active { transform: translateY(1px); }
@@ -101,6 +107,13 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 .cadre-verre { --cadre: url("../ui/kenney/ui-pack-sci-fi/couleurs/verre-biseau.png"); --coupe: 16 16 8 16; --bords: 16px 16px 8px 16px; padding: 14px 14px 10px; }
 /* bouton et titre gris, bouton à la couleur du pôle */
 .sf-bouton.du-pole { border-image-source: var(--bouton); color: var(--sur); text-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
+/* bouton fermer : bouton rond rouge du pack, avec une croix et un liseré blanc pour se détacher des en-têtes colorés */
+.sf-fermer { width: 24px; height: 24px; padding: 0 0 1px; border: 0; border-radius: 50%; display: grid; place-items: center;
+  background: url("../ui/kenney/ui-pack-sci-fi/fermer.png") center / 100% 100% no-repeat; box-shadow: 0 0 0 2px rgba(255, 255, 255, .9), 0 2px 4px rgba(20, 30, 60, .3);
+  color: #fff; font: 700 15px/1 var(--texte); text-shadow: 0 1px 0 rgba(110, 0, 20, .55); cursor: var(--curseur-clic); transition: filter .12s, transform .12s; }
+.sf-fermer:hover, .sf-fermer:focus-visible { filter: brightness(1.12); transform: scale(1.08); outline: none; }
+.sf-fermer:focus-visible { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--pole); }
+.sf-fermer:active { transform: scale(.95); }
 .sf-titre.gris { border-image-source: url("../ui/kenney/ui-pack-sci-fi/couleurs/titre-gris.png"); color: var(--encre); text-shadow: none; }
 
 /* ---------- chargement ---------- */
@@ -118,7 +131,7 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 .panneau p { font-size: 12px; margin: 0 2px 8px; color: var(--doux); }
 #legende { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 6px; }
 #legende button { display: flex; align-items: center; gap: 7px; border: 1px solid transparent; background: transparent; padding: 4px 6px;
-  border-radius: 6px; font-family: var(--texte); font-size: 12.5px; color: var(--encre); cursor: pointer; text-align: left; }
+  border-radius: 6px; font-family: var(--texte); font-size: 12.5px; color: var(--encre); cursor: var(--curseur-clic); text-align: left; }
 #legende button:hover, #legende button:focus-visible { background: color-mix(in srgb, var(--c, #1c9be0) 16%, transparent); border-color: color-mix(in srgb, var(--c, #1c9be0) 60%, transparent); outline: none; }
 #legende button.qg { grid-column: 1 / -1; font-weight: 600; }
 #legende i { width: 12px; height: 12px; border-radius: 2px; flex: none; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .2), 0 0 0 2px rgba(255, 255, 255, .7); }
@@ -142,7 +155,7 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 #fiche li span { grid-row: 2; grid-column: 2 / -1; color: var(--doux); font-size: 12px; }
 #fiche li em { grid-row: 1; grid-column: 3; justify-self: end; font-style: normal; font-size: 12px; color: var(--doux); }
 #fiche .vide { font-size: 12px; color: var(--doux); margin: 0 4px; }
-#fiche .fermer { position: absolute; top: 3px; right: 8px; font-size: 14px; padding: 0; min-width: 24px; }
+#fiche .fermer { position: absolute; top: 4px; right: 9px; }
 #fiche .entrer { margin-top: 10px; width: 100%; }
 
 /* ---------- infobulles et barres d'aide ---------- */
@@ -178,9 +191,9 @@ body.en-visite .consigne-visite { display: block; }
 #minimap .haut { width: 100%; }
 
 /* visite en pause */
-#reprendre { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(20, 24, 48, .45); z-index: 8; cursor: pointer; }
+#reprendre { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(20, 24, 48, .45); z-index: 8; cursor: var(--curseur-clic); }
 #reprendre[hidden] { display: none; }
-#reprendre .carte { text-align: center; display: grid; gap: 8px; cursor: default; min-width: 280px; padding-top: 46px; }
+#reprendre .carte { text-align: center; display: grid; gap: 8px; cursor: var(--curseur); min-width: 280px; padding-top: 46px; }
 #reprendre .carte p { margin: 0 0 4px; font-size: 13px; color: var(--doux); }
 
 /* ---------- fenêtre d'un agent ---------- */
@@ -191,7 +204,7 @@ body.en-visite .consigne-visite { display: block; }
 #agent .carte { width: 100%; max-height: calc(100vh - 28px); display: flex; flex-direction: column; }
 #agent .defile { overflow: auto; overflow-x: hidden; min-height: 0; flex: 1; margin: 0 -6px; padding: 0 6px 2px; }
 /* prénom dans l'onglet coloré, bouton fermer tout à droite, dans la partie grise */
-#agent .fermer { position: absolute; top: 3px; right: 10px; font-size: 16px; padding: 0; min-width: 30px; }
+#agent .fermer { position: absolute; top: 4px; right: 12px; }
 #agent .poste { margin: 0 4px 2px; font-size: 15px; font-weight: 600; color: var(--encre); }
 #agent .qui { display: flex; align-items: center; gap: 8px; margin: 0 4px 10px; font-size: 12.5px; color: var(--doux); }
 #agent .qui i { width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 6px currentColor; }
@@ -240,7 +253,7 @@ body.en-visite .consigne-visite { display: block; }
 #agent.large .journal { max-height: 30vh; }
 #agent.large .compte-rendu { max-height: 42vh; }
 /* noms cliquables dans la fiche de la salle */
-#fiche li { cursor: pointer; }
+#fiche li { cursor: var(--curseur-clic); }
 #fiche li:hover, #fiche li:focus-visible { background: rgba(255, 255, 255, .9); border-color: rgba(28, 155, 224, .55); outline: none; }
 
 @media (max-width: 640px) {
