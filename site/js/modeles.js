@@ -15,14 +15,19 @@ const NATURE = [
   'flower_redA', 'flower_yellowA', 'flower_purpleA', 'grass',
 ];
 
+// Bornes d'arcade, flipper, machine à pinces… du kit Kenney « Mini Arcade » (CC0)
+const ARCADE = ['arcade-machine', 'claw-machine', 'pinball', 'vending-machine', 'ticket-machine'];
+
 // Échelle qui met le kit de mobilier Kenney à la taille de nos agents (un bureau ≈ 1,4 de large, 0,73 de haut).
 export const ECHELLE_MEUBLES = 1.92;
+// Échelle du kit Mini Arcade : une borne d'arcade fait alors environ 1,75 de haut.
+export const ECHELLE_ARCADE = 2.4;
 
 const modeles = {};
 
 export async function chargerModeles(progression = () => {}) {
   const loader = new GLTFLoader();
-  const liste = [...MEUBLES.map(n => ['furniture-kit', n]), ...NATURE.map(n => ['nature-kit', n])];
+  const liste = [...MEUBLES.map(n => ['furniture-kit', n]), ...NATURE.map(n => ['nature-kit', n]), ...ARCADE.map(n => ['mini-arcade', n])];
   let faits = 0;
   await Promise.all(liste.map(async ([kit, nom]) => {
     try {
@@ -49,7 +54,7 @@ export function poser(parent, nom, x, z, r = 0, o = {}) {
   const m = modeles[nom];
   if (!m) return null;
   const taille = m.boite.getSize(new THREE.Vector3()), centre = m.boite.getCenter(new THREE.Vector3());
-  let s = o.s ?? (m.kit === 'furniture-kit' ? ECHELLE_MEUBLES : 1);
+  let s = o.s ?? ({ 'furniture-kit': ECHELLE_MEUBLES, 'mini-arcade': ECHELLE_ARCADE }[m.kit] || 1);
   if (o.h) s = o.h / taille.y;
   if (o.w) s = o.w / taille.x;
   const pivot = grp(parent, x, o.y || 0, z, r);

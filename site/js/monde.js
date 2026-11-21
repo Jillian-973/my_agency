@@ -607,25 +607,16 @@ export function construireMonde(scene) {
     sides: { n: 'part', w: 'part', s: 'f' }, doors: [{ side: 'n', off: 1.6 }],
     floor: { type: 'carpet', c: '#1e1b4b', dots: ['#22d3ee', '#f472b6', '#facc15', '#a3e635'] }, wain: '#312e81',
     fill(g) {
-      const cab = (x, z, r, c, k) => {
-        const a = grp(g, x, 0, z, r);
-        box(a, .72, 1.75, .7, 0, 0, -.05, c); box(a, .74, .25, .5, 0, 1.75, 0, glow(tint(c, .3)));
-        const sc = plane(a, .56, .44, 0, 1.38, .26, screenMat(k)); sc.rotation.x = -.25;
-        const cp = box(a, .72, .08, .3, 0, .95, .38, '#111827'); cp.rotation.x = .3;
-        sph(a, .04, -.15, 1.05, .4, '#ef4444', 0); sph(a, .04, .1, 1.05, .4, '#facc15', 0);
-      };
-      cab(-2.0, -3.5, 0, '#e11d48', 'arcade1'); cab(-1.15, -3.5, 0, '#2563eb', 'arcade22'); cab(-.3, -3.5, 0, '#16a34a', 'arcade333');
-      cab(-2.35, -2.2, Math.PI / 2, '#9333ea', 'arcade4444'); cab(-2.35, -1.3, Math.PI / 2, '#f59e0b', 'arcade55555'); cab(-2.35, -.4, Math.PI / 2, '#0ea5e9', 'arcade666666');
-      const cl = grp(g, 1.9, 0, -.6); box(cl, .85, .9, .85, 0, 0, 0, '#ec4899'); box(cl, .85, .95, .85, 0, .9, 0, glassMat); box(cl, .89, .2, .89, 0, 1.85, 0, glow('#f9a8d4'));
-      for (let i = 0; i < 8; i++) sph(cl, .09, (R() - .5) * .55, 1.0, (R() - .5) * .55, pick(['#facc15', '#22d3ee', '#a3e635', '#f472b6']), 0);
-      const pin = grp(g, 1.6, 0, 1.7, -Math.PI / 2); const t = box(pin, .6, .2, 1.25, 0, .8, 0, '#0ea5e9'); t.rotation.x = .1;
-      for (const sx of [-.24, .24]) for (const sz of [-.53, .53]) box(pin, .06, .82, .06, sx, 0, sz, DARK);
-      box(pin, .6, .75, .12, 0, 1.0, -.6, glow('#38bdf8'));
+      // bornes, machine à pinces, flipper, distributeur et borne à tickets du kit Kenney « Mini Arcade »
+      for (const x of [-2.1, -1.1, -.1]) poser(g, 'arcade-machine', x, -3.25, 0);           // rangée le long du mur nord
+      for (const z of [-1.6, -.55]) poser(g, 'arcade-machine', -2.1, z, Math.PI / 2);      // deux bornes contre la cloison ouest
+      poser(g, 'claw-machine', 1.85, -.9, -Math.PI / 2);
+      poser(g, 'pinball', 1.6, 1.45, -Math.PI / 2);
+      poser(g, 'vending-machine', 2.25, 3.1, -Math.PI / 2);
+      poser(g, 'ticket-machine', .45, 3.45, Math.PI);
       sofa(g, -1, 3.3, Math.PI, '#7c3aed', 1.8);
-      if (aModele('speaker')) { poser(g, 'speaker', 2.4, .55, -Math.PI / 2); poser(g, 'speaker', -2.35, 2.2, Math.PI / 2); }
-      // distributeur de friandises, affiches rétro, canettes sur le canapé
-      const dist = grp(g, 2.3, 0, 3.05, -Math.PI / 2); box(dist, .8, 1.9, .6, 0, 0, 0, '#1e293b'); box(dist, .6, 1.3, .02, -.05, .45, .31, glow('#bae6fd'));
-      for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) box(dist, .1, .1, .05, -.27 + j * .14, .55 + i * .3, .28, pick(['#f43f5e', '#facc15', '#22c55e', '#a855f7', '#f97316']), false);
+      if (aModele('speaker')) { poser(g, 'speaker', 2.4, .4, -Math.PI / 2); poser(g, 'speaker', -2.35, 2.2, Math.PI / 2); }
+      // affiches rétro, canettes sur le canapé
       affiche(g, -2.6, 1.95, .9, Math.PI / 2, 'pixel', .45); affiche(g, -2.6, 1.95, 2.1, Math.PI / 2, 'abstrait', .45);
       for (const [x, c] of [[-1.5, '#ef4444'], [-1.25, '#22c55e']]) cyl(g, .035, .035, .11, x, .43, 3.3, c, 8);
       const sign = canvasTex(256, 64, (c) => { c.font = 'bold 44px sans-serif'; c.shadowColor = '#f0abfc'; c.shadowBlur = 12; c.fillStyle = '#f5d0fe'; c.fillText('ARCADE', 38, 48); });
@@ -636,6 +627,8 @@ export function construireMonde(scene) {
   /* ---- Salle de sport ---- */
   room({
     id: 'sport', x: 17.25, z: 10, w: 5.5, d: 8, accent: '#14b8a6', label: 'Sport',
+    // étagère sur le mur est, à côté de la grande vitre (et plus au-dessus de la porte)
+    murs: { e: (m) => etagereMurale(m, 2.52, 1.7, -2.3, -Math.PI / 2, 1.0, ['plante', 'boite'], 'sport') },
     sides: { n: 'part', w: 'part', s: 'f', e: 'f' }, doors: [{ side: 'n', off: 1.4 }], windows: { e: [0] },
     floor: { type: 'tile', c1: '#cbd5e1', c2: '#d6dee8' },
     fill(g) {
@@ -654,7 +647,6 @@ export function construireMonde(scene) {
       for (const tx of [-1.8, -.6]) bouteille(g, tx + .22, 1.5, -3.72, pick(['#38bdf8', '#a3e635']));
       for (let i = 0; i < 3; i++) box(g, .4, .06, .3, .9, .45 + i * .06, .35 - i * .02, ['#f8fafc', '#5eead4', '#f8fafc'][i]);
       horloge(g, -2.62, 1.8, 1.0, Math.PI / 2, '#0f766e'); affiche(g, -2.62, .8, -.4, Math.PI / 2, 'sport', .5);
-      etagereMurale(g, .9, 1.7, -3.85, 0, 1.0, ['plante', 'boite'], 'sport');
       plant(g, -2.3, .4, .9);
     },
   });
