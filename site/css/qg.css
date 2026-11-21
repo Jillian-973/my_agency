@@ -137,6 +137,14 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 #legende i { width: 12px; height: 12px; border-radius: 2px; flex: none; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .2), 0 0 0 2px rgba(255, 255, 255, .7); }
 .panneau .lune { margin: 8px 2px 0; font-size: 11px; color: var(--doux); }
 .panneau .lune::before { content: "☾ "; color: var(--bleu); }
+/* choix des graphismes : deux petits boutons collés */
+.panneau .graphismes { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 6px 2px 0; font-size: 11px; color: var(--doux); }
+.choix-graphismes { display: inline-flex; border: 1px solid rgba(43, 47, 69, .2); border-radius: 999px; overflow: hidden; }
+.choix-graphismes button { border: 0; background: transparent; padding: 2px 9px; font: 600 11px/1.4 var(--texte); color: var(--doux); cursor: var(--curseur-clic); }
+.choix-graphismes button + button { border-left: 1px solid rgba(43, 47, 69, .2); }
+.choix-graphismes button[aria-pressed="true"] { background: var(--bleu); color: #fff; }
+.choix-graphismes button:focus-visible { outline: 2px solid var(--bleu); outline-offset: -2px; }
+.panneau .graphismes .note { font-size: 10.5px; }
 .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .actions .sf-lien { margin-left: auto; }
 
