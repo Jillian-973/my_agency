@@ -5,34 +5,54 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>JILL KORP · Mentions</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/qg.css">
 <style>
-  :root { --encre: #1f2937; --doux: #4b5563; --or: #b8860b; --fond: #f6f8fb; --carte: #ffffff; --trait: #e5e7eb; }
-  * { box-sizing: border-box; }
-  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--encre); background: var(--fond); line-height: 1.55; }
-  main { max-width: 820px; margin: 0 auto; padding: 32px 16px 64px; }
-  a { color: #1d4ed8; }
-  .retour { display: inline-block; margin-bottom: 18px; font-size: 14px; }
-  h1 { font-size: 26px; margin: 0 0 6px; }
-  h1 span { color: var(--or); }
-  .intro { color: var(--doux); margin: 0 0 28px; }
-  section { background: var(--carte); border: 1px solid var(--trait); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; }
-  h2 { font-size: 17px; margin: 0 0 4px; }
-  .meta { font-size: 13px; color: var(--doux); margin: 0 0 10px; }
-  .licence { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #dcfce7; color: #166534; }
-  .licence.mit { background: #dbeafe; color: #1e40af; }
-  ul.modeles { columns: 3 180px; margin: 10px 0 0; padding-left: 18px; font-size: 13px; color: var(--doux); }
-  code { font-size: 12.5px; background: #f1f5f9; padding: 1px 5px; border-radius: 5px; }
-  footer { font-size: 13px; color: var(--doux); margin-top: 24px; }
+  /* la page Mentions défile, contrairement au QG */
+  html, body { overflow: auto; height: auto; }
+  body { background: radial-gradient(circle at 50% 0%, #2d3462, #1a1d38 70%); min-height: 100vh; line-height: 1.55; }
+  main { max-width: 860px; margin: 0 auto; padding: 28px 16px 64px; }
+  .retour { display: inline-block; margin-bottom: 18px; text-decoration: none; }
+  h1.page { font-family: var(--sf); font-weight: normal; font-size: 26px; letter-spacing: .05em; margin: 0 0 6px; color: #e7f2fa; }
+  h1.page span { color: #ffc600; }
+  .intro { color: #aac3e7; margin: 0 0 24px; }
+  section.sf-panneau { margin-bottom: 16px; padding: 0 6px 4px; }
+  section h2.sf-titre { margin-bottom: 10px; }
+  .meta { font-size: 13px; color: var(--doux); margin: 0 0 8px; }
+  .meta a { color: #1d6fb3; }
+  .licence { display: inline-block; font-family: var(--sf); font-size: 10px; letter-spacing: .05em; padding: 2px 8px; border-radius: 999px; background: #c9f0d6; color: #14532d; }
+  .licence.mit { background: #cfe4ff; color: #1e3a8a; }
+  section p { font-size: 14px; margin: 0 0 8px; }
+  ul.modeles { columns: 3 180px; margin: 8px 0 4px; padding-left: 18px; font-size: 13px; color: var(--doux); }
+  code { font-size: 12px; background: rgba(43, 47, 69, .08); padding: 1px 5px; border-radius: 4px; }
+  footer { font-size: 13px; color: #aac3e7; margin-top: 22px; }
 </style>
 </head>
 <body>
 <main>
-  <a class="retour" href="index.html">← Retour au QG</a>
-  <h1>Mentions · <span>JILL KORP</span></h1>
-  <p class="intro">Le QG tourne entièrement sur cet ordinateur : la bibliothèque 3D et les modèles sont enregistrés dans le projet, rien n'est chargé depuis un site externe. Voici à qui on les doit.</p>
+  <a class="retour sf-bouton principal" href="index.html">← Retour au QG</a>
+  <h1 class="page">Mentions · <span>JILL KORP</span></h1>
+  <p class="intro">Le QG tourne entièrement sur cet ordinateur : la bibliothèque 3D, les modèles, les images de l'interface et les polices sont enregistrés dans le projet, rien n'est chargé depuis un site externe. Voici à qui on les doit.</p>
 
-  <section>
-    <h2>Modèles 3D · Kenney, « Furniture Kit » (version 2.0)</h2>
+  <section class="sf-panneau">
+    <h2 class="sf-titre">Interface · Kenney, « UI Pack: Sci-fi » (version 2.0)</h2>
+    <p class="meta">Auteur : Kenney (Kenney Vleugels) · <a href="https://kenney.nl/assets/ui-pack-sci-fi">kenney.nl/assets/ui-pack-sci-fi</a> · <span class="licence">CC0 1.0 · domaine public</span></p>
+    <p>Tout l'habillage de l'interface : panneaux à vis, barres de titre, boutons, jauge de chargement, viseur de la visite, et les polices <b>Kenney Future</b> et <b>Kenney Future Narrow</b> (menus, étiquettes et enseignes des pôles). Certains fichiers ont été renommés en français. Fichier de licence d'origine : <code>ui/kenney/ui-pack-sci-fi/License.txt</code>.</p>
+    <ul class="modeles">
+      <li>button_rectangle_depth (panneau)</li><li>bar_square_gloss_large bleu (barre-titre)</li><li>bar_round_gloss_large bleu, jaune, gris (boutons)</li><li>bar_shadow_square_large (jauge-fond)</li><li>bar_square_gloss_large jaune (jauge-plein)</li><li>crosshair_color_a (viseur)</li><li>Kenney Future.ttf</li><li>Kenney Future Narrow.ttf</li>
+    </ul>
+  </section>
+
+  <section class="sf-panneau">
+    <h2 class="sf-titre">Minimap · Kenney, « Minimap Pack » (version 1.0)</h2>
+    <p class="meta">Auteur : Kenney (Kenney Vleugels) · <a href="https://kenney.nl/assets/minimap-pack">kenney.nl/assets/minimap-pack</a> · <span class="licence">CC0 1.0 · domaine public</span></p>
+    <p>Le plan affiché en haut à droite pendant la visite : couleurs et murs du style D, tuiles du visiteur, des agents, du Coffre (X) et de l'entrée (S). Fichier de licence d'origine : <code>ui/kenney/minimap-pack/License.txt</code>.</p>
+    <ul class="modeles">
+      <li>Tilemap / Style D / tilemap_packed (tuiles-style-d)</li>
+    </ul>
+  </section>
+
+  <section class="sf-panneau">
+    <h2 class="sf-titre">Modèles 3D · Kenney, « Furniture Kit » (version 2.0)</h2>
     <p class="meta">Auteur : Kenney (Kenney Vleugels) · <a href="https://kenney.nl/assets/furniture-kit">kenney.nl/assets/furniture-kit</a> · <span class="licence">CC0 1.0 · domaine public</span></p>
     <p>Mobilier du bureau : bureaux, chaises, claviers, canapés, fauteuils, table basse, plantes, frigo, machine à café, tabourets, lampadaire, armoire, enceintes, poubelles, cartons. Fichier de licence d'origine : <code>models/kenney/furniture-kit/License.txt</code>.</p>
     <ul class="modeles">
@@ -40,8 +60,8 @@
     </ul>
   </section>
 
-  <section>
-    <h2>Modèles 3D · Kenney, « Nature Kit » (version 2.1)</h2>
+  <section class="sf-panneau">
+    <h2 class="sf-titre">Modèles 3D · Kenney, « Nature Kit » (version 2.1)</h2>
     <p class="meta">Auteur : Kenney (Kenney Vleugels) · <a href="https://kenney.nl/assets/nature-kit">kenney.nl/assets/nature-kit</a> · <span class="licence">CC0 1.0 · domaine public</span></p>
     <p>Autour du bureau : sapins, rochers, pierres, buissons, herbes et fleurs. Fichier de licence d'origine : <code>models/kenney/nature-kit/License.txt</code>.</p>
     <ul class="modeles">
@@ -49,17 +69,17 @@
     </ul>
   </section>
 
-  <section>
-    <h2>Modèles 3D · Kenney, « Mini Arcade » (version 1.2)</h2>
+  <section class="sf-panneau">
+    <h2 class="sf-titre">Modèles 3D · Kenney, « Mini Arcade » (version 1.2)</h2>
     <p class="meta">Auteurs : Kenney, avec Fleur Keijsers et Guus Vermeulen · <a href="https://kenney.nl/assets/mini-arcade">kenney.nl/assets/mini-arcade</a> · <span class="licence">CC0 1.0 · domaine public</span></p>
     <p>Salle d'arcade : bornes, machine à pinces, flipper, distributeur et borne à tickets. Fichier de licence d'origine : <code>models/kenney/mini-arcade/License.txt</code>.</p>
     <ul class="modeles">
-      <li>arcade-machine</li><li>claw-machine</li><li>pinball</li><li>vending-machine</li><li>ticket-machine</li>
+      <li>arcade-machine</li><li>claw-machine</li><li>pinball</li><li>vending-machine</li><li>ticket-machine</li><li>Textures/colormap</li>
     </ul>
   </section>
 
-  <section>
-    <h2>Images · Kenney, « Planets » (version 1.0)</h2>
+  <section class="sf-panneau">
+    <h2 class="sf-titre">Images · Kenney, « Planets » (version 1.0)</h2>
     <p class="meta">Auteur : Kenney (Kenney Vleugels) · <a href="https://kenney.nl/assets/planets">kenney.nl/assets/planets</a> · <span class="licence">CC0 1.0 · domaine public</span></p>
     <p>Les planètes en orbite autour du bureau, et la texture des mers de la Lune (images réduites à 512 px). Fichier de licence d'origine : <code>models/kenney/planets/License.txt</code>.</p>
     <ul class="modeles">
@@ -67,18 +87,18 @@
     </ul>
   </section>
 
-  <section>
-    <h2>Bibliothèque 3D · three.js (r160)</h2>
+  <section class="sf-panneau">
+    <h2 class="sf-titre">Bibliothèque 3D · three.js (r160)</h2>
     <p class="meta">Auteurs : les contributeurs de three.js · <a href="https://threejs.org">threejs.org</a> · <span class="licence mit">Licence MIT</span></p>
     <p>Moteur 3D du QG, avec ses modules <code>OrbitControls</code>, <code>GLTFLoader</code> et <code>BufferGeometryUtils</code>. Copie de la licence : <code>vendor/three/LICENSE</code>.</p>
   </section>
 
-  <section>
-    <h2>Le reste</h2>
-    <p>Le bâtiment, les salles, les agents, les écrans, les mascottes Octet et Archibald, l'île et le Coffre sont dessinés directement dans le code du QG, sans modèle externe. Les polices sont celles de ton système.</p>
+  <section class="sf-panneau">
+    <h2 class="sf-titre">Le reste</h2>
+    <p>Le bâtiment, les salles, les agents, les écrans, les mascottes Octet et Archibald, l'île, le Coffre, la Lune et son calcul de phase sont dessinés directement dans le code du QG. Le logo JILL KORP utilise la police de ton système.</p>
   </section>
 
-  <footer>CC0 : les auteurs ont renoncé à leurs droits ; créditer n'est pas obligatoire mais on le fait avec plaisir. Merci à Kenney et à l'équipe three.js.</footer>
+  <footer>CC0 : les auteurs ont renoncé à leurs droits ; créditer n'est pas obligatoire mais on le fait avec plaisir. Merci à Kenney, à ses co-auteurs et à l'équipe three.js.</footer>
 </main>
 </body>
 </html>
