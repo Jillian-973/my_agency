@@ -14,6 +14,7 @@ import { creerMinimap } from './minimap.js';
 import { creerFenetreAgent } from './fenetre-agent.js';
 import { creerOnglets } from './onglets.js';
 import { creerReunion } from './reunion.js';
+import { creerBandeau } from './bandeau.js';
 import { POLES, ETATS } from './donnees.js';
 
 const $ = (s) => document.querySelector(s);
@@ -283,6 +284,8 @@ const onglets = creerOnglets({
   apresSifflet: () => vueEnsemble(),
   desactive: () => fenetre.ouverte() || visite.actif(),
 });
+// bandeau du haut : logos des connecteurs, allumés quand un agent s'en sert
+creerBandeau();
 // minimap de la visite (en haut à droite) : plan du bureau, agents et visiteur
 const posAgent = new THREE.Vector3();
 const minimap = creerMinimap({
