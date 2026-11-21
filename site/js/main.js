@@ -5,7 +5,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { anim } from './outils.js';
 import { chargerModeles } from './modeles.js';
 import { construireMonde, BX, BZ, Y0, ISLET } from './monde.js';
-import { agentsPoses } from './mobilier.js';
+import { agentsPoses, figurantsPoses } from './mobilier.js';
 import { ajusterEtiquettes, ajusterEtiquettesVisite, quitterEtiquettesVisite } from './etiquettes.js';
 import { construireCollisions } from './collisions.js';
 import { creerVisite } from './visite.js';
@@ -14,6 +14,10 @@ import { creerMinimap } from './minimap.js';
 import { creerFenetreAgent } from './fenetre-agent.js';
 import { creerOnglets } from './onglets.js';
 import { creerReunion } from './reunion.js';
+import { creerChemins } from './chemins.js';
+import { creerMarche } from './marche.js';
+import { creerFoule } from './foule.js';
+import { creerFous } from './fous.js';
 import { creerBandeau } from './bandeau.js';
 import { POLES, ETATS } from './donnees.js';
 
@@ -126,6 +130,15 @@ function fusionner(racine, dest, garder = false) {
   return [faits.length, paquets.size];
 }
 
+/** Un personnage créé après la construction (promeneur, agent qui se lève) : 1 maillage pour le corps, 1 par membre qui bouge. */
+function compacter(g) {
+  const membres = [...(g.userData.jambes || []), ...(g.userData.brasDebout || g.userData.bras || [])];
+  for (const m of membres) m.traverse(o => { if (o.isMesh) o.userData.keep = true; });
+  fusionner(g, g, true);
+  for (const m of membres) { m.traverse(o => { if (o.isMesh) o.userData.keep = false; }); fusionner(m, m, true); }
+  g.traverse(o => { if (o.isMesh) o.castShadow = false; });     // les ombres ne sont recalculées que si une façade change
+}
+
 /* ================= Construction ================= */
 const barre = $('#chargement .barre i');
 // polices (Kenney Future pour les titres, Inter pour le reste) : chargées avant de dessiner étiquettes et enseignes
@@ -139,11 +152,11 @@ let avant = 0, apres = 0;
 const compte = ([a, b]) => { avant += a; apres += b; };
 for (const k in facade) for (const part of ['tall', 'low']) compte(fusionner(facade[k][part], facade[k][part], true));
 // les bras de chaque agent assis restent à part (ils tapent au clavier pendant une tâche) : 1 maillage par bras
-for (const a of agentsPoses) for (const b of a.groupe.userData.bras || []) {
+for (const a of [...agentsPoses, ...figurantsPoses]) for (const b of a.groupe.userData.bras || []) {
   b.traverse((o) => { if (o.isMesh && o !== a.groupe.userData.tasse) o.userData.keep = false; });
   compte(fusionner(b, b, true));
 }
-for (const a of agentsPoses) compte(fusionner(a.groupe, a.groupe, true));     // chaque agent = 1 maillage (+ ses 2 bras)
+for (const a of [...agentsPoses, ...figurantsPoses]) compte(fusionner(a.groupe, a.groupe, true));     // chaque agent (ou figurant) = 1 maillage (+ ses 2 bras)
 compte(fusionner(scene, scene));
 scene.traverse((o) => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map(toLambert) : toLambert(o.material); });
 console.log(`Fusion : ${avant} objets → ${apres} maillages`);
@@ -175,13 +188,19 @@ for (const a of agentsPoses) {
   a.zone = z ? z.id : null;
   a.groupe.userData.poseAgent = a;
 }
-// réunion : les agents cochés dans l'onglet « Équipe » marchent jusqu'à la salle de réunion
+// chemins sur la grille du sol, et marche des personnages (portes ouvertes au passage)
+const chemins = creerChemins({ zones, sol: hauteurSol, collisions });
+const marche = creerMarche({ sol: hauteurSol, portes });
+// réunion (agents cochés dans l'onglet « Équipe ») et pauses des agents
 const reunion = creerReunion({
-  scene, zones, agentsPoses, sol: hauteurSol, collisions, portes,
+  scene, zones, agentsPoses, sol: hauteurSol, chemins, marche, compacter,
   ombres: () => { renderer.shadowMap.needsUpdate = true; },
   quandChange: () => { onglets.redessiner(); if (zoneActive && !$('#fiche').hidden) afficherFiche(zoneActive); },
 });
-const lieuDe = (a) => (a.enReunion ? 'reunion' : a.zone);     // en réunion (ou en route), l'agent compte dans la salle de réunion
+const lieuDe = (a) => a.lieu || a.zone;     // en réunion ou en pause (et en route), l'agent compte là où il va
+// la vie du QG : promeneurs, pauses café ou arcade, et quelques détails un peu fous
+const foule = creerFoule({ scene, zones, sol: hauteurSol, chemins, marche, reunion, agentsPoses, compacter });
+const fous = creerFous({ scene, zones, sol: hauteurSol, collisions, agentsPoses, compacter });
 
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 function zoneSous(x, y) {
@@ -495,7 +514,7 @@ fpsEl.title = 'Carte graphique utilisée : ' + GPU;
 if (LOGICIEL) { renderer.shadowMap.enabled = false; pr = PR_MIN; renderer.setPixelRatio(pr); }
 
 // accès pratique depuis la console du navigateur (débogage)
-window.qg = { scene, camera, controls, zones, agents: agentsPoses, portes, allerVers, vueEnsemble, entrerDans, vueDuHaut, visite, onglets, reunion, collisions, sol: hauteurSol };
+window.qg = { scene, camera, controls, zones, agents: agentsPoses, portes, allerVers, vueEnsemble, entrerDans, vueDuHaut, visite, onglets, reunion, foule, fous, marche, chemins, collisions, sol: hauteurSol };
 
 /* ================= Boucle ================= */
 const clock = new THREE.Clock();
@@ -504,7 +523,7 @@ function image() {
   const dt = Math.min(clock.getDelta(), .1), t = clock.elapsedTime;
   for (const a of anim) a.fn(t, dt);
   visite.mettreAJour(dt);
-  reunion.mettreAJour(dt);
+  marche.mettreAJour(dt); foule.mettreAJour(dt); fous.mettreAJour(dt);
   ciel.mettreAJour(t, visite.actif() ? visite.camera : camera);
   if (visite.actif()) {
     minimap.dessiner(visite.position(), visite.orientation());
