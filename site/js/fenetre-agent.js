@@ -82,6 +82,7 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {} }) {
   }
   function choisir(nom) {
     onglet = nom;
+    racine.classList.toggle('large', !!nom);          // la fenêtre s'agrandit pour discuter ou suivre une tâche
     for (const b of ui.onglets) b.setAttribute('aria-selected', String(b.dataset.onglet === nom));
     ui.discuter.hidden = nom !== 'discuter';
     ui.tache.hidden = nom !== 'tache';

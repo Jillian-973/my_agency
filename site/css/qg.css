@@ -140,10 +140,14 @@ body.en-visite .consigne-visite { display: block; }
 
 /* ---------- fenêtre d'un agent ---------- */
 #agent { position: fixed; inset: 0; display: grid; grid-template-columns: minmax(0, 460px); place-content: center; align-items: center; padding: 14px; background: rgba(20, 24, 48, .38); z-index: 9; }
+/* plus grande pendant une discussion ou une tâche */
+#agent.large { grid-template-columns: minmax(0, 720px); }
 #agent[hidden] { display: none; }
 #agent .carte { position: relative; width: 100%; max-height: calc(100vh - 28px); overflow: auto; display: flex; flex-direction: column; }
-#agent .sf-titre { margin-right: 32px; }
-#agent .fermer { position: absolute; top: 0; right: 0; font-size: 14px; padding: 0; min-width: 22px; }
+/* en-tête : titre à gauche, bouton fermer bien à part à droite */
+#agent .entete { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 6px; }
+#agent .entete .sf-titre { flex: 1; min-width: 0; margin-right: 0; margin-bottom: 0; }
+#agent .fermer { flex: none; font-size: 16px; padding: 0; min-width: 30px; margin-top: -4px; }
 #agent .qui { display: flex; align-items: center; gap: 8px; margin: 0 4px 10px; font-size: 12.5px; color: var(--doux); }
 #agent .qui i { width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 6px currentColor; }
 #agent .qui .pole { font-weight: 600; }
@@ -184,6 +188,11 @@ body.en-visite .consigne-visite { display: block; }
 #agent .cout { margin: 8px 2px; font-size: 12px; color: var(--doux); }
 #agent .boutons { display: flex; gap: 8px; flex-wrap: wrap; }
 #agent .boutons .ouvrir { flex: 1; }
+#agent.large .fil { min-height: 260px; max-height: 56vh; }
+#agent.large .fil li { font-size: 13.5px; max-width: 80%; }
+#agent.large textarea { min-height: 180px; }
+#agent.large .journal { max-height: 30vh; }
+#agent.large .compte-rendu { max-height: 42vh; }
 /* noms cliquables dans la fiche de la salle */
 #fiche li { cursor: pointer; }
 #fiche li:hover, #fiche li:focus-visible { background: rgba(255, 255, 255, .9); border-color: rgba(28, 155, 224, .55); outline: none; }
