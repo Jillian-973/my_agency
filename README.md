@@ -43,13 +43,13 @@ Pour parler aux agents, [Claude Code](https://claude.com/claude-code) doit être
 Le MCP du QG (`live/mcp-qg.js`, sans dépendance) fait passer tes demandes par Jillian, la CEO, qui pilote toute l'équipe :
 
 1. Démarre le QG (`node live/server.js`), puis une session `claude` dans le dossier du projet. La première fois, Claude Code demande d'approuver le serveur MCP « qg » du projet (`.mcp.json`).
-2. Tape `/mcp__qg__demander` suivi de ta demande (ou demande simplement à Claude de la confier au QG).
+2. Tape `/qg` suivi de ta demande, par exemple `/qg prépare la page d'accueil du nouveau site` (la commande est dans `.claude/commands/qg.md` ; `/qg` seul donne l'état du QG).
 3. Jillian connaît chaque agent (poste, missions, outils, connecteurs, modèle) : elle découpe la demande en missions, attribue chacune au bon agent, et enchaîne des étapes quand une mission a besoin du résultat d'une autre (par exemple, Max code puis Théo relit). Le serveur lance les tâches dès qu'une place se libère (4 à la fois) ; tu les vois travailler dans le QG, et la CEO apparaît « au travail » tant qu'elle pilote.
 4. À la fin, Jillian rédige le compte rendu final : il revient dans Claude Code et il est rangé dans `live/travaux/Jillian/missions/`.
 
 Outils du MCP : `demander_au_ceo`, `suivre_mission` (avec attente jusqu'à la fin), `etat_du_qg`. Le MCP joint le serveur grâce à `live/.qg-session.json` (adresse et jeton du démarrage en cours, jamais versionné). Un agent du QG ne peut jamais rappeler la CEO. La planification et le compte rendu coûtent chacun au plus 0,50 $ (modèle de la CEO), en plus des tâches des agents.
 
-Pour l'utiliser depuis n'importe quel dossier, ajoute-le une fois à ta configuration personnelle de Claude Code : `claude mcp add --scope user qg -- node "<chemin du projet>/live/mcp-qg.js"`.
+Pour l'utiliser depuis n'importe quel dossier, ajoute une fois le MCP à ta configuration personnelle de Claude Code (`claude mcp add --scope user qg -- node "<chemin du projet>/live/mcp-qg.js"`) et copie `.claude/commands/qg.md` dans `~/.claude/commands/`.
 
 ## Organisation
 
