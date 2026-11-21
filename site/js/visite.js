@@ -137,5 +137,5 @@ export function creerVisite({ canvas, collisions, sol, portes, interface: ui }) 
   function redimensionner() { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
   addEventListener('resize', redimensionner);
 
-  return { camera, entrer, sortir, mettreAJour, actif: () => etat.actif, position: () => new THREE.Vector3(etat.x, etat.pieds, etat.z) };
+  return { camera, entrer, sortir, mettreAJour, actif: () => etat.actif, position: () => new THREE.Vector3(etat.x, etat.pieds, etat.z), orientation: () => etat.lacet };
 }

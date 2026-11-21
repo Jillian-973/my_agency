@@ -183,7 +183,7 @@ export function construireMonde(scene) {
     if (o.label) etiquette(o.label, o.accent, o.x + (o.labelDx || 0), y + (o.labelY || 3.6), o.z + (o.labelDz || 0), o.parent || world);
     if (o.id) {
       const base = o.parent ? o.parent.position : new THREE.Vector3();
-      zones.push({ id: o.id, nom: o.label, couleur: o.accent, pole: o.pole || null, x: base.x + o.x, y: base.y + y, z: base.z + o.z, w, d, bas: o.bas ?? 0 });
+      zones.push({ id: o.id, nom: o.label, couleur: o.accent, pole: o.pole || null, x: base.x + o.x, y: base.y + y, z: base.z + o.z, w, d, bas: o.bas ?? 0, sides: s, doors: o.doors || [] });
     }
     return g;
   }
@@ -619,7 +619,7 @@ export function construireMonde(scene) {
       // affiches rétro, canettes sur le canapé
       affiche(g, -2.6, 1.95, .9, Math.PI / 2, 'pixel', .45); affiche(g, -2.6, 1.95, 2.1, Math.PI / 2, 'abstrait', .45);
       for (const [x, c] of [[-1.5, '#ef4444'], [-1.25, '#22c55e']]) cyl(g, .035, .035, .11, x, .43, 3.3, c, 8);
-      const sign = canvasTex(256, 64, (c) => { c.font = 'bold 44px sans-serif'; c.shadowColor = '#f0abfc'; c.shadowBlur = 12; c.fillStyle = '#f5d0fe'; c.fillText('ARCADE', 38, 48); });
+      const sign = canvasTex(256, 64, (c) => { c.font = '40px "Kenney Future", sans-serif'; c.shadowColor = '#f0abfc'; c.shadowBlur = 12; c.fillStyle = '#f5d0fe'; c.fillText('ARCADE', 38, 48); });
       plane(g, 2.2, .55, -1.15, 2.5, -3.82, new THREE.MeshBasicMaterial({ map: sign, transparent: true, toneMapped: false }));
     },
   });

@@ -117,7 +117,7 @@ function screenTex(kind) {
         break; }
       case 'calendar': {
         g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.fillStyle = '#3b82f6'; g.fillRect(0, 0, w, 22);
-        g.fillStyle = '#fff'; g.font = 'bold 14px sans-serif'; g.fillText('Agenda · semaine', 10, 16);
+        g.fillStyle = '#fff'; g.font = '14px "Kenney Future", sans-serif'; g.fillText('Agenda · semaine', 10, 16);
         g.strokeStyle = '#e2e8f0'; for (let i = 0; i <= 7; i++) { g.beginPath(); g.moveTo(i * w / 7, 22); g.lineTo(i * w / 7, h); g.stroke(); }
         for (let i = 0; i < 12; i++) { const d = Math.floor(r() * 7); g.fillStyle = pick(['#93c5fd', '#fca5a5', '#86efac', '#fde68a', '#c4b5fd'], r); g.fillRect(d * w / 7 + 3, 28 + r() * 110, w / 7 - 6, 12 + r() * 18); }
         break; }
@@ -184,7 +184,7 @@ function screenTex(kind) {
         g.fillStyle = '#000'; g.fillRect(0, 0, w, 12); g.fillRect(0, h - 12, w, 12);
         break; }
       case 'menu': {
-        g.fillStyle = '#1f2a24'; g.fillRect(0, 0, w, h); g.fillStyle = '#f5f5f4'; g.font = 'bold 20px sans-serif'; g.fillText('CAFÉ', 96, 26);
+        g.fillStyle = '#1f2a24'; g.fillRect(0, 0, w, h); g.fillStyle = '#f5f5f4'; g.font = '20px "Kenney Future", sans-serif'; g.fillText('CAFÉ', 96, 26);
         for (let i = 0; i < 6; i++) { lines(20, 42 + i * 18, 1, '#e7e5e4', 140, 18, 4); g.fillStyle = '#fde68a'; g.fillRect(210, 42 + i * 18, 26, 4); }
         break; }
       default: { // arcade
@@ -202,11 +202,11 @@ const screenMat = (kind) => scrCache[kind] ||= new THREE.MeshBasicMaterial({ map
 /* ---- Logo JILL KORP (lettres dorées ou blanches) ---- */
 function korpTex(fill) {
   return canvasTex(512, 128, (c) => {
-    c.font = '900 86px system-ui, "Segoe UI", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = '80px "Kenney Future", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
     try { c.letterSpacing = '10px'; } catch (e) { /* navigateur sans letterSpacing */ }
     if (fill === 'gold') { const gr = c.createLinearGradient(0, 20, 0, 108); gr.addColorStop(0, '#fff3b0'); gr.addColorStop(.5, '#facc15'); gr.addColorStop(1, '#b8860b'); c.fillStyle = gr; c.shadowColor = 'rgba(250,204,21,.6)'; c.shadowBlur = 14; }
     else c.fillStyle = fill;
-    c.fillText('JILL KORP', 256, 68);
+    c.fillText('JILL KORP', 256, 68, 480);          // 480 px au plus : la police sci-fi est large
   });
 }
 const korpGold = new THREE.MeshBasicMaterial({ map: korpTex('gold'), transparent: true, toneMapped: false });

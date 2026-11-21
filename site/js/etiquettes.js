@@ -20,7 +20,7 @@ function sprite(tex, w, h) {
 /** Étiquette d'une salle (ou de quoi que ce soit) : pastille de couleur + texte. */
 export function etiquette(texte, couleur, x, y, z, parent, hauteur = 1.35) {
   const c = document.createElement('canvas'), g = c.getContext('2d');
-  const fs = 46, font = `700 ${fs}px system-ui, "Segoe UI", sans-serif`;
+  const fs = 44, font = `${fs}px "Kenney Future Narrow", system-ui, "Segoe UI", sans-serif`;
   g.font = font; const tw = g.measureText(texte).width;
   c.width = Math.ceil(tw + fs * 2.3); c.height = Math.ceil(fs * 1.9);
   g.font = font;
@@ -42,7 +42,7 @@ export function etiquetteAgent(data, couleurPole, parent) {
   const s = sprite(texture(c), 1, 1);
   const item = { sprite: s, base: new THREE.Vector3(), data, canvas: c };
   item.dessiner = () => {
-    const nomF = '800 44px system-ui, "Segoe UI", sans-serif', posteF = '500 30px system-ui, "Segoe UI", sans-serif', etatF = '600 28px system-ui, "Segoe UI", sans-serif';
+    const nomF = '42px "Kenney Future", system-ui, sans-serif', posteF = '30px "Kenney Future Narrow", system-ui, sans-serif', etatF = '28px "Kenney Future Narrow", system-ui, sans-serif';
     g.font = nomF; const w1 = g.measureText(data.prenom).width;
     g.font = posteF; const w2 = g.measureText(data.poste).width;
     g.font = etatF; const w3 = g.measureText(data.etat).width + 34;
