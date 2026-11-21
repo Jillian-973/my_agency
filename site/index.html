@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- jeton secret glissé ici par live/server.js à chaque démarrage : l'API des agents refuse toute demande sans lui -->
+<meta name="qg-jeton" content="__JETON_QG__">
 <title>JILL KORP · Le QG</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/qg.css">
@@ -53,7 +55,7 @@
     <p class="lieu"></p>
     <button class="haut sf-bouton principal" type="button" data-haut>Vue d'en haut</button>
   </aside>
-  <div class="aide-visite sf-bulle"><span class="si-capture">Z Q S D ou flèches : marcher · Maj : courir · souris : regarder · E : ouvrir une porte · Échap : rendre la souris</span><span class="si-glisser">Z Q S D ou flèches : marcher · Maj : courir · glisser avec la souris : regarder · E : ouvrir une porte</span></div>
+  <div class="aide-visite sf-bulle"><span class="si-capture">Z Q S D ou flèches : marcher · Maj : courir · souris : regarder · E : ouvrir une porte ou parler à un agent · Échap : rendre la souris</span><span class="si-glisser">Z Q S D ou flèches : marcher · Maj : courir · glisser avec la souris : regarder · E : ouvrir une porte ou parler à un agent</span></div>
 </div>
 <div id="reprendre" hidden>
   <div class="carte sf-panneau">
@@ -64,8 +66,54 @@
   </div>
 </div>
 
+<!-- fenêtre d'un agent : discuter ou lui confier une tâche (Claude Code, en local) -->
+<div id="agent" hidden>
+  <section class="carte sf-panneau" role="dialog" aria-modal="true" aria-labelledby="agent-titre">
+    <button class="fermer sf-bouton gris" type="button" aria-label="Fermer la fenêtre de l'agent">×</button>
+    <h2 id="agent-titre" class="sf-titre"></h2>
+    <p class="qui"><i></i><span class="pole"></span><em class="etat"></em></p>
+    <div class="choix" role="tablist">
+      <button class="sf-bouton" type="button" role="tab" data-onglet="discuter">Discuter</button>
+      <button class="sf-bouton" type="button" role="tab" data-onglet="tache">Confier une tâche</button>
+    </div>
+    <p class="message" hidden></p>
+
+    <div class="onglet discuter" hidden>
+      <ol class="fil" aria-live="polite"></ol>
+      <form class="ecrire">
+        <input type="text" maxlength="2000" autocomplete="off" required>
+        <button class="sf-bouton principal" type="submit">Envoyer</button>
+      </form>
+      <p class="note">Réponse sans aucun outil. Rien n'est enregistré : la discussion s'efface en rechargeant la page.</p>
+    </div>
+
+    <div class="onglet tache" hidden>
+      <form class="confier">
+        <textarea rows="5" maxlength="8000" required></textarea>
+        <button class="sf-bouton principal" type="submit">Lancer la tâche</button>
+        <p class="note"></p>
+      </form>
+      <div class="suivi" hidden>
+        <p class="statut"></p>
+        <ol class="journal" aria-live="polite"></ol>
+        <div class="fin" hidden>
+          <h3>Compte rendu</h3>
+          <div class="compte-rendu"></div>
+          <h3>Fichiers créés</h3>
+          <ul class="fichiers"></ul>
+          <p class="cout"></p>
+          <div class="boutons">
+            <button class="ouvrir sf-bouton principal" type="button">Ouvrir son dossier</button>
+            <button class="nouvelle sf-bouton gris" type="button">Nouvelle tâche</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
 <div id="survol" class="sf-bulle" hidden></div>
-<div class="aide sf-bulle">Clic gauche : tourner · molette ou pincer : zoom · clic droit, ZQSD ou flèches : se déplacer · double-clic : entrer · Échap : vue d'ensemble</div>
+<div class="aide sf-bulle">Clic gauche : tourner · molette ou pincer : zoom · clic droit, ZQSD ou flèches : se déplacer · double-clic : entrer · clic sur un agent : lui parler · Échap : vue d'ensemble</div>
 <div id="fps" class="sf-bulle"></div>
 
 <script type="module" src="js/main.js"></script>

@@ -1,5 +1,5 @@
 // Visite à la première personne : marcher (Z Q S D ou flèches, Maj pour courir), regarder avec la souris,
-// ouvrir les portes avec E. Échap rend la souris ; un clic dans la vue la reprend.
+// ouvrir les portes ou parler à un agent avec E. Échap rend la souris ; un clic dans la vue la reprend.
 import * as THREE from 'three';
 
 const RAYON = .28, YEUX = 1.5, MARCHE = 3.2, COURSE = 6, MARCHE_MAX = .45, SENSI = .0022;
@@ -8,7 +8,7 @@ const TOUCHES = {
   gauche: ['KeyA', 'ArrowLeft'], droite: ['KeyD', 'ArrowRight'],    // KeyA = Q sur un clavier AZERTY
 };
 
-export function creerVisite({ canvas, collisions, sol, portes, interface: ui }) {
+export function creerVisite({ canvas, collisions, sol, portes, agents = [], parler = () => {}, bloquee = () => false, interface: ui }) {
   const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, .05, 300);
   camera.rotation.order = 'YXZ';
   const etat = { actif: false, x: 0, z: 0, pieds: 0, lacet: 0, tangage: 0, balancement: 0 };
@@ -52,9 +52,10 @@ export function creerVisite({ canvas, collisions, sol, portes, interface: ui }) 
   canvas.addEventListener('click', () => { if (etat.actif && !verrouillee()) verrouiller(); });
 
   /* ---------- clavier ---------- */
+  const enSaisie = (e) => e.target && e.target.closest && e.target.closest('input, textarea, select, [contenteditable]');
   addEventListener('keydown', (e) => {
-    if (!etat.actif) return;
-    if (e.code === 'KeyE' && !e.repeat) { basculerPorte(); e.preventDefault(); return; }
+    if (!etat.actif || bloquee() || enSaisie(e)) return;          // fenêtre d'agent ouverte, ou on écrit
+    if (e.code === 'KeyE' && !e.repeat) { actionE(); e.preventDefault(); return; }
     if (Object.values(TOUCHES).flat().includes(e.code) || e.code.startsWith('Shift')) { appuis.add(e.code); e.preventDefault(); }
   });
   addEventListener('keyup', (e) => appuis.delete(e.code));
@@ -73,9 +74,29 @@ export function creerVisite({ canvas, collisions, sol, portes, interface: ui }) 
     }
     return meilleure;
   }
-  function basculerPorte() {
-    const p = porteProche(); if (!p) return;
-    p.ouverte = !p.ouverte;
+  /* ---------- agents : E pour leur parler ---------- */
+  // agents = [{ x, z, y, pose }] : position de chaque agent (son siège) ; on lui parle à moins de 2 m, s'il est devant soi.
+  function agentProche() {
+    let meilleur = null, dmin = 2;
+    const vx = -Math.sin(etat.lacet), vz = -Math.cos(etat.lacet);
+    for (const a of agents) {
+      const dx = a.x - etat.x, dz = a.z - etat.z, d = Math.hypot(dx, dz);
+      if (Math.abs(a.y - etat.pieds) > 1.2) continue;
+      const devant = d < .8 || (dx * vx + dz * vz) / (d || 1) > .55;
+      if (d < dmin && devant) { dmin = d; meilleur = a; }
+    }
+    return meilleur && { agent: meilleur, d: dmin };
+  }
+  /** Ce que fait E ici : parler à l'agent le plus proche devant soi, sinon ouvrir ou fermer la porte. */
+  function cible() {
+    const a = agentProche(), p = porteProche();
+    if (a && (!p || a.d <= Math.hypot(p.centre.x - etat.x, p.centre.z - etat.z) + .3)) return { agent: a.agent };
+    return p ? { porte: p } : null;
+  }
+  function actionE() {
+    const c = cible(); if (!c) return;
+    if (c.agent) { appuis.clear(); parler(c.agent.pose); return; }
+    c.porte.ouverte = !c.porte.ouverte;
   }
 
   /* ---------- déplacement avec collisions ---------- */
@@ -129,13 +150,21 @@ export function creerVisite({ canvas, collisions, sol, portes, interface: ui }) 
     etat.balancement = bouge ? etat.balancement + dt * 9 : etat.balancement * .9;
     camera.position.set(etat.x, etat.pieds + YEUX + Math.sin(etat.balancement) * .025, etat.z);
     camera.rotation.set(etat.tangage, etat.lacet, 0);
-    // invite « E : ouvrir la porte »
-    const p = porteProche();
-    ui.invite.hidden = !p;
-    if (p) ui.invite.textContent = p.barriere ? (p.ouverte ? 'E : baisser la barrière' : 'E : lever la barrière') : (p.ouverte ? 'E : fermer la porte' : 'E : ouvrir la porte');
+    // invite « E : parler à Léa » ou « E : ouvrir la porte »
+    const c = bloquee() ? null : cible(), p = c && c.porte;
+    ui.invite.hidden = !c;
+    if (c && c.agent) ui.invite.textContent = `E : parler à ${c.agent.pose.agent.prenomEquipe || c.agent.pose.agent.prenom}`;
+    else if (p) ui.invite.textContent = p.barriere ? (p.ouverte ? 'E : baisser la barrière' : 'E : lever la barrière') : (p.ouverte ? 'E : fermer la porte' : 'E : ouvrir la porte');
   }
+  /** Rendre la souris sans afficher « Visite en pause » (une fenêtre s'ouvre par-dessus la visite). */
+  function liberer() {
+    appuis.clear(); tire = null; etaitVerrouillee = false;
+    if (verrouillee()) document.exitPointerLock();
+  }
+  /** Reprendre la souris après la fermeture de cette fenêtre (appelé depuis un clic ou une touche). */
+  function reprendre() { if (etat.actif) { ui.reprendre.hidden = true; verrouiller(); } }
   function redimensionner() { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
   addEventListener('resize', redimensionner);
 
-  return { camera, entrer, sortir, mettreAJour, actif: () => etat.actif, position: () => new THREE.Vector3(etat.x, etat.pieds, etat.z), orientation: () => etat.lacet };
+  return { camera, entrer, sortir, mettreAJour, liberer, reprendre, verrouillee, glisser: () => glisser, actif: () => etat.actif, position: () => new THREE.Vector3(etat.x, etat.pieds, etat.z), orientation: () => etat.lacet };
 }

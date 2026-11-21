@@ -71,6 +71,7 @@ export const AGENTS = [
 ];
 
 // Le CEO de JILL KORP (hors pôles)
-export const CEO = { id: 'ceo', prenom: 'CEO', poste: 'Direction · JILL KORP', pole: null, etat: 'au travail', missions: [], outils: [] };
+// Dans EQUIPE.md, le CEO s'appelle Jillian : c'est sous ce nom que le serveur le connaît (idEquipe, prenomEquipe).
+export const CEO = { id: 'ceo', prenom: 'CEO', poste: 'Direction · JILL KORP', pole: null, etat: 'au travail', missions: [], outils: [], idEquipe: 'jillian', prenomEquipe: 'Jillian' };
 
 export const agentParId = Object.fromEntries([...AGENTS, CEO].map(a => [a.id, a]));
