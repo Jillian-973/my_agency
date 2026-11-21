@@ -6,14 +6,17 @@ import { R, pick, tint, shade, mat, glow, glassMat, grp, box, cyl, sph, plane, s
 import { poser, aModele } from './modeles.js';
 import { etiquetteAgent } from './etiquettes.js';
 import { POLES } from './donnees.js';
+import { habillerBureau } from './details.js';
 
 export const WOOD = '#d6ae84', DARKWOOD = '#7a4f2e', METAL = '#94a3b8', DARK = '#334155';
 
 /* ---------- postes de travail ---------- */
 export function desk(p, x, z, r = 0, kind = 'code', o = {}) {
   const g = grp(p, x, 0, z, r), w = o.w || 1.4;
-  if (!o.w && aModele('desk')) poser(g, 'desk', 0, 0, 0);
-  else {
+  if (!o.w && aModele('desk')) {
+    // le bureau Kenney est très profond (1,07) : on le ramène à 0,7 pour que les bureaux dos à dos ne se chevauchent pas
+    const d = poser(g, 'desk', 0, 0, 0); d.scale.z = .7 / d.userData.taille.z;
+  } else {
     box(g, w, .06, .7, 0, .7, 0, o.top || WOOD);
     for (const s of [-1, 1]) box(g, .06, .7, .62, s * (w / 2 - .05), 0, 0, o.leg || '#cbd5e1');
   }
@@ -103,7 +106,9 @@ export const agentsPoses = [];
  */
 export function poste(p, x, z, r, kind, agent, look, o = {}) {
   const g = grp(p, x, 0, z, r);
-  desk(g, 0, 0, 0, kind, o);
+  const d = desk(g, 0, 0, 0, kind, o);
+  // chaque bureau est un peu différent : objet métier + assortiment stable tiré de l'identifiant
+  habillerBureau(d, agent ? agent.id : `libre-${x.toFixed(1)}-${z.toFixed(1)}-${kind}`, o.w || 1.4, !agent);
   if (!agent) { chair(g, 0, .8, Math.PI, o.chair); return g; }
   const tourne = agent.etat === 'en pause' ? .55 : 0;
   const pers = personnage(g, 0, .8, Math.PI + tourne, look, 'sit', agent.etat);
