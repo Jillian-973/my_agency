@@ -33,6 +33,8 @@ const BUDGET_DISCUSSION = 0.25;    // dollars par réponse en discussion
 const TACHES_MAX = 4;              // tâches en même temps
 const DUREE_MAX_TACHE = 30 * 60e3; // une tâche est arrêtée au bout de 30 minutes
 const OUTILS_TACHE = ['Read', 'Write', 'Edit', 'WebSearch', 'WebFetch'];
+const BUDGET_CORBEILLE = 0.5;      // dollars pour mettre à la corbeille les mails que tu as validés
+const CNX = require('./connecteurs.js');
 
 // Jeton secret, recréé à chaque démarrage : il est glissé dans la page du QG et exigé par l'API.
 // Une page d'un autre site ne peut pas le lire (même origine obligatoire), donc ne peut pas appeler l'API.
@@ -152,64 +154,114 @@ function fichierDe(entree) {
   return typeof p === 'string' ? path.basename(p) : null;
 }
 
-function lancerTache(agent, consigne) {
+/**
+ * Lance une tâche. Trois cas :
+ * - agent sans connecteur : outils de fichiers et recherche web seulement, aucun serveur MCP (--strict-mcp-config) ;
+ * - agent avec connecteurs (EQUIPE.md, ligne « Outils ») : en plus, les outils précis prévus pour lui (live/connecteurs.js),
+ *   tous les autres outils de tous les connecteurs interdits, et la session attend que les connecteurs soient branchés ;
+ * - mode « corbeille » : uniquement trash_thread, sur la liste exacte de mails que tu as validée dans la page.
+ */
+function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null } = {}) {
   const id = crypto.randomUUID();
   const dossier = path.join(TRAVAUX, agent.prenom);
   fs.mkdirSync(dossier, { recursive: true });
   const avant = listerFichiers(dossier);
-  const t = { id, agent: agent.id, prenom: agent.prenom, etat: 'en cours', debut: Date.now(), dossier, evenements: [], abonnes: new Set() };
+  const t = { id, agent: agent.id, prenom: agent.prenom, mode, etat: 'en cours', debut: Date.now(), dossier, evenements: [], abonnes: new Set(), corbeille: [] };
   taches.set(id, t);
   if (taches.size > 50) for (const [k, v] of taches) { if (v.etat !== 'en cours') { taches.delete(k); break; } }
-
-  const systeme = personnalite(agent) + '\n' +
-    'Tu travailles dans ton dossier de travail (le dossier courant) : c\'est là que tu ranges tout ce que tu produis, sous forme de fichiers. ' +
-    'Tu peux lire, écrire et modifier des fichiers de ce dossier et chercher sur le web ; rien d\'autre. ' +
-    'Quand tu as fini, termine par un compte rendu court en français : ce que tu as fait, les fichiers créés, et ce qu\'il reste éventuellement à faire.';
-  const args = ['-p', '--model', 'sonnet', ...COMMUNES, '--tools', OUTILS_TACHE.join(','), '--allowedTools', OUTILS_TACHE.join(','),
-    '--permission-mode', 'acceptEdits', '--max-budget-usd', String(BUDGET_TACHE),
-    '--output-format', 'stream-json', '--verbose', '--append-system-prompt', systeme];
+  const budgetMax = mode === 'corbeille' ? BUDGET_CORBEILLE : BUDGET_TACHE;
   diffuser(t, { type: 'debut', prenom: agent.prenom });
-  let enfant;
-  try { enfant = spawn(CLAUDE, args, { cwd: dossier, windowsHide: true }); }
-  catch (e) { terminer({ erreur: e.message }); return t; }
-  t.enfant = enfant;
+  demarrer().catch((e) => terminer({ erreur: `Impossible de lancer Claude Code : ${e.message}` }));
 
-  let tampon = '', resultat = null, erreurs = '';
-  enfant.stdout.on('data', (d) => {
-    tampon += d;
-    let i;
-    while ((i = tampon.indexOf('\n')) >= 0) {
-      const ligne = tampon.slice(0, i).trim(); tampon = tampon.slice(i + 1);
-      if (!ligne) continue;
-      let j; try { j = JSON.parse(ligne); } catch { continue; }
-      if (j.type === 'assistant' && j.message && Array.isArray(j.message.content)) {
-        for (const c of j.message.content) if (c.type === 'tool_use') diffuser(t, { type: 'outil', outil: c.name, fichier: fichierDe(c.input) });
-      } else if (j.type === 'result') resultat = j;
+  async function demarrer() {
+    const avecConnecteurs = mode === 'corbeille' || CNX.aDesConnecteurs(agent.id);
+    let systeme = personnalite(agent) + '\n' +
+      'Tu travailles dans ton dossier de travail (le dossier courant) : c\'est là que tu ranges tout ce que tu produis, sous forme de fichiers. ' +
+      'Tu peux lire, écrire et modifier des fichiers de ce dossier et chercher sur le web' + (avecConnecteurs ? '. ' + CNX.consignes(agent.id) + ' ' : ' ; rien d\'autre. ') +
+      'Quand tu as fini, termine par un compte rendu court en français : ce que tu as fait, les fichiers créés, et ce qu\'il reste éventuellement à faire.';
+    const fin = ['--permission-mode', 'acceptEdits', '--max-budget-usd', String(budgetMax), '--output-format', 'stream-json', '--verbose'];
+    let args, env = process.env;
+    if (!avecConnecteurs) {
+      args = ['-p', '--model', 'sonnet', ...COMMUNES, '--tools', OUTILS_TACHE.join(','), '--allowedTools', OUTILS_TACHE.join(','), ...fin];
+    } else {
+      diffuser(t, { type: 'info', texte: 'Branchement des connecteurs…' });
+      const d = await CNX.decouvrir(CLAUDE);
+      if (t.etat !== 'en cours') return;
+      const r = CNX.regles(agent.id, d, mode);
+      if (r.absents.length) diffuser(t, { type: 'info', texte: `Pas branché : ${r.absents.join(', ')} (à reconnecter avec /mcp dans un terminal « claude »).` });
+      if (mode === 'corbeille') {
+        if (r.absents.length) return terminer({ erreur: 'Gmail n\'est pas branché : aucun mail n\'a été touché.' });
+        systeme = personnalite(agent) + '\nTu mets à la corbeille Gmail exactement les fils listés dans la consigne, avec l\'outil trash_thread, un appel par identifiant, ' +
+          'et rien d\'autre. Termine par un compte rendu court en français : combien de fils sont partis à la corbeille.';
+      }
+      const outilsFichiers = mode === 'corbeille' ? [] : OUTILS_TACHE;
+      // sans --strict-mcp-config : la session charge tes connecteurs claude.ai ; --disallowedTools les cache tous sauf les outils prévus
+      args = ['-p', '--model', 'sonnet', '--restricted', '--disable-slash-commands', '--tools', outilsFichiers.join(','),
+        '--allowedTools', [...outilsFichiers, ...r.autorises].join(','), '--disallowedTools', r.interdits.join(','), ...fin];
+      env = { ...process.env, MCP_CONNECTION_NONBLOCKING: 'false' };   // attendre que les connecteurs soient branchés avant de commencer
     }
-  });
-  enfant.stderr.on('data', (d) => { erreurs += d; if (erreurs.length > 4000) erreurs = erreurs.slice(-4000); });
-  const minuteur = setTimeout(() => { enfant.kill(); erreurs += '\nTâche arrêtée : plus de 30 minutes.'; }, DUREE_MAX_TACHE);
-  enfant.on('error', (e) => { clearTimeout(minuteur); terminer({ erreur: `Impossible de lancer Claude Code : ${e.message}` }); });
-  enfant.on('close', () => {
-    clearTimeout(minuteur);
-    if (t.etat !== 'en cours') return;
-    const apres = listerFichiers(dossier);
-    const crees = [...apres].filter(f => !avant.has(f)).sort();
-    if (!resultat) return terminer({ erreur: (erreurs.trim() || 'Claude Code s\'est arrêté sans compte rendu.').slice(-400), fichiers: crees });
-    const budget = /budget/i.test(resultat.subtype || '');
-    terminer({
-      ok: !resultat.is_error,
-      compteRendu: String(resultat.result || '').trim() || (budget ? `Tâche arrêtée : le plafond de ${BUDGET_TACHE} $ est atteint.` : ''),
-      erreur: resultat.is_error ? (budget ? `Plafond de ${BUDGET_TACHE} $ atteint.` : `Arrêt : ${resultat.subtype || 'erreur'}`) : null,
-      fichiers: crees,
-      cout: typeof resultat.total_cost_usd === 'number' ? Math.round(resultat.total_cost_usd * 100) / 100 : null,
+    args.push('--append-system-prompt', systeme);
+    if (args.join(' ').length > 30000) return terminer({ erreur: 'Liste d\'outils trop longue pour la ligne de commande.' });
+    lancer(args, env);
+  }
+
+  let enfant = null;
+  function lancer(args, env) {
+    try { enfant = spawn(CLAUDE, args, { cwd: dossier, windowsHide: true, env }); }
+    catch (e) { return terminer({ erreur: e.message }); }
+    t.enfant = enfant;
+    let tampon = '', resultat = null, erreurs = '';
+    enfant.stdout.on('data', (d) => {
+      tampon += d;
+      let i;
+      while ((i = tampon.indexOf('\n')) >= 0) {
+        const ligne = tampon.slice(0, i).trim(); tampon = tampon.slice(i + 1);
+        if (!ligne) continue;
+        let j; try { j = JSON.parse(ligne); } catch { continue; }
+        if (j.type === 'assistant' && j.message && Array.isArray(j.message.content)) {
+          for (const c of j.message.content) {
+            if (c.type !== 'tool_use') continue;
+            diffuser(t, { type: 'outil', outil: CNX.nomLisible(c.name), fichier: fichierDe(c.input) });
+            // garde-fou : un appel interdit (envoi, corbeille sans accord, mail hors liste…) arrête aussitôt la session
+            if (String(c.name).startsWith('mcp__')) {
+              const alerte = CNX.controler(agent.id, c.name, c.input, mode, idsCorbeille);
+              if (alerte) { try { enfant.kill(); } catch { /* déjà arrêtée */ } return terminer({ erreur: `Session arrêtée par le garde-fou : ${alerte}.`, fichiers: nouveaux() }); }
+              if (mode === 'corbeille') t.corbeille.push(String(c.input.threadId));
+            }
+          }
+        } else if (j.type === 'result') resultat = j;
+      }
     });
-  });
-  enfant.stdin.end(consigne);
+    enfant.stderr.on('data', (d) => { erreurs += d; if (erreurs.length > 4000) erreurs = erreurs.slice(-4000); });
+    const minuteur = setTimeout(() => { enfant.kill(); erreurs += '\nTâche arrêtée : plus de 30 minutes.'; }, DUREE_MAX_TACHE);
+    enfant.on('error', (e) => { clearTimeout(minuteur); terminer({ erreur: `Impossible de lancer Claude Code : ${e.message}` }); });
+    enfant.on('close', () => {
+      clearTimeout(minuteur);
+      if (t.etat !== 'en cours') return;
+      const crees = nouveaux();
+      if (!resultat) return terminer({ erreur: (erreurs.trim() || 'Claude Code s\'est arrêté sans compte rendu.').slice(-400), fichiers: crees });
+      const budget = /budget/i.test(resultat.subtype || '');
+      terminer({
+        ok: !resultat.is_error,
+        compteRendu: String(resultat.result || '').trim() || (budget ? `Tâche arrêtée : le plafond de ${budgetMax} $ est atteint.` : ''),
+        erreur: resultat.is_error ? (budget ? `Plafond de ${budgetMax} $ atteint.` : `Arrêt : ${resultat.subtype || 'erreur'}`) : null,
+        fichiers: crees,
+        cout: typeof resultat.total_cost_usd === 'number' ? Math.round(resultat.total_cost_usd * 100) / 100 : null,
+      });
+    });
+    enfant.stdin.end(consigne);
+  }
+  const nouveaux = () => [...listerFichiers(dossier)].filter(f => !avant.has(f)).sort();
 
   function terminer(fin) {
+    if (t.etat !== 'en cours') return;
     t.etat = 'terminee'; t.fin = Date.now(); delete t.enfant;
-    diffuser(t, { type: 'fin', ok: !!fin.ok, compteRendu: fin.compteRendu || '', erreur: fin.erreur || null, fichiers: fin.fichiers || [], cout: fin.cout ?? null });
+    // mails que l'agent propose de mettre à la corbeille (a-supprimer.json) : tu les valides dans la page
+    t.propositions = mode === 'tache' && CNX.PROPOSE_CORBEILLE.has(agent.id) ? CNX.lirePropositions(dossier, t.debut) : [];
+    diffuser(t, {
+      type: 'fin', ok: !!fin.ok, compteRendu: fin.compteRendu || '', erreur: fin.erreur || null, fichiers: fin.fichiers || [], cout: fin.cout ?? null,
+      propositions: t.propositions, corbeille: mode === 'corbeille' ? t.corbeille.length : undefined,
+    });
     for (const res of t.abonnes) res.end();
     t.abonnes.clear();
   }
@@ -257,7 +309,8 @@ async function api(req, res, url) {
   const p = url.pathname;
 
   if (req.method === 'GET' && p === '/api/etat') {
-    return json(res, 200, { claude: !!CLAUDE, enCours: enCours().map(t => ({ id: t.id, agent: t.agent })), max: TACHES_MAX });
+    const connecteurs = Object.fromEntries(Object.keys(EQUIPE).filter(CNX.aDesConnecteurs).map(id => [id, CNX.connecteursDe(id)]));
+    return json(res, 200, { claude: !!CLAUDE, enCours: enCours().map(t => ({ id: t.id, agent: t.agent })), max: TACHES_MAX, connecteurs });
   }
 
   if (req.method === 'POST' && (p === '/api/discuter' || p === '/api/taches')) {
@@ -283,9 +336,27 @@ async function api(req, res, url) {
     return json(res, 201, { id: t.id, dossier: path.relative(RACINE, t.dossier).split(path.sep).join('/') });
   }
 
-  const m = p.match(/^\/api\/taches\/([0-9a-f-]{36})\/(flux|ouvrir)$/);
+  const m = p.match(/^\/api\/taches\/([0-9a-f-]{36})\/(flux|ouvrir|corbeille)$/);
   const t = m && taches.get(m[1]);
   if (m && !t) return json(res, 404, { erreur: 'Tâche inconnue.' });
+
+  // Corbeille Gmail, seulement sur ton accord : les mails cochés dans la page, parmi ceux que l'agent a proposés
+  if (m && m[2] === 'corbeille' && req.method === 'POST') {
+    if ((req.headers['content-type'] || '').split(';')[0] !== 'application/json') return json(res, 415, { erreur: 'JSON attendu.' });
+    let corps; try { corps = await lireCorps(req); } catch (e) { return json(res, 400, { erreur: e.message }); }
+    const agent = EQUIPE[t.agent];
+    if (t.etat !== 'terminee' || !t.propositions || !t.propositions.length) return json(res, 400, { erreur: 'Aucune proposition à valider pour cette tâche.' });
+    if (t.corbeilleLancee) return json(res, 409, { erreur: 'Ces propositions ont déjà été traitées.' });
+    const proposes = new Map(t.propositions.map(x => [x.threadId, x]));
+    const ids = [...new Set((Array.isArray(corps.threadIds) ? corps.threadIds : []).map(String))];
+    if (!ids.length || ids.some(i => !proposes.has(i))) return json(res, 400, { erreur: 'Choisis des mails parmi ceux que l\'agent a proposés.' });
+    if (enCours().some(x => x.agent === agent.id)) return json(res, 409, { erreur: `${agent.prenom} est déjà sur une tâche.` });
+    if (enCours().length >= TACHES_MAX) return json(res, 429, { erreur: `${TACHES_MAX} tâches tournent déjà : attends qu'une se termine.` });
+    t.corbeilleLancee = true;
+    const liste = ids.map(i => { const x = proposes.get(i); return `- ${i} (${x.de} · ${x.objet})`; }).join('\n');
+    const nt = lancerTache(agent, `Mets à la corbeille ces ${ids.length} fils Gmail, que j'ai validés :\n${liste}`, { mode: 'corbeille', idsCorbeille: new Set(ids) });
+    return json(res, 201, { id: nt.id });
+  }
   if (m && m[2] === 'flux' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Content-Type-Options': 'nosniff' });
     for (const evt of t.evenements) res.write(`data: ${JSON.stringify(evt)}\n\n`);
@@ -346,4 +417,10 @@ server.listen(PORT, HOST, () => {
   console.log('Accessible uniquement depuis cet ordinateur. Ctrl+C pour arrêter.');
   console.log(CLAUDE ? `Claude Code : ${CLAUDE}` : 'Attention : Claude Code introuvable, les agents ne pourront pas répondre.');
   console.log(`Agents lus dans EQUIPE.md : ${Object.keys(EQUIPE).length}`);
+  for (const a of CNX.verifierEquipe(EQUIPE)) console.log(`Attention, connecteurs : ${a}`);
+  // repérage des connecteurs branchés dès le démarrage, pour que la première tâche démarre plus vite
+  if (CLAUDE) CNX.decouvrir(CLAUDE).then((d) => {
+    if (!d.serveurs.length) return console.log('Connecteurs : aucun repéré (ils seront recherchés à la première tâche).');
+    console.log('Connecteurs : ' + d.serveurs.map(s => `${s.nom.replace(/^claude\.ai /, '')}${s.statut === 'connected' ? '' : ` (${s.statut})`}`).join(', '));
+  });
 });
