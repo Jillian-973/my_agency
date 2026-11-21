@@ -106,6 +106,7 @@ export function creerBandeau() {
     racine.style.setProperty('--bandeau-gauche', Math.round(Math.min(Math.max((innerWidth - w) / 2, gauche), innerWidth - droite - w)) + 'px');
   }
   addEventListener('resize', placer);
+  new ResizeObserver(() => placer()).observe(document.documentElement);   // aussi quand la fenêtre change de taille sans événement
   new MutationObserver(placer).observe(document.body, { attributes: true, attributeFilter: ['class'] });   // entrée et sortie de visite
 
   /* ---------- défilement : flèches, molette, glisser ---------- */
