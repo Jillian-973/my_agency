@@ -34,6 +34,9 @@ desktop.ini
 # ── Captures de référence : images de jeux sous droits, gardées en local uniquement ──
 references/
 
+# ── Travaux produits par les agents (live/travaux/<Prénom>/) : restent sur cet ordinateur ──
+live/travaux/
+
 # ── Fichiers temporaires ──
 *.tmp
 site/_*.html

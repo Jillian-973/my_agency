@@ -11,6 +11,7 @@ import { construireCollisions } from './collisions.js';
 import { creerVisite } from './visite.js';
 import { creerCiel, nomPhase, eclairage } from './planetes.js';
 import { creerMinimap } from './minimap.js';
+import { creerFenetreAgent } from './fenetre-agent.js';
 import { POLES, ETATS } from './donnees.js';
 
 const $ = (s) => document.querySelector(s);
@@ -134,7 +135,12 @@ const collisions = construireCollisions([world, islet], portes);
 let avant = 0, apres = 0;
 const compte = ([a, b]) => { avant += a; apres += b; };
 for (const k in facade) for (const part of ['tall', 'low']) compte(fusionner(facade[k][part], facade[k][part], true));
-for (const a of agentsPoses) compte(fusionner(a.groupe, a.groupe, true));     // chaque agent = 1 maillage (+ ses bras s'il tape)
+// les bras de chaque agent assis restent à part (ils tapent au clavier pendant une tâche) : 1 maillage par bras
+for (const a of agentsPoses) for (const b of a.groupe.userData.bras || []) {
+  b.traverse((o) => { if (o.isMesh && o !== a.groupe.userData.tasse) o.userData.keep = false; });
+  compte(fusionner(b, b, true));
+}
+for (const a of agentsPoses) compte(fusionner(a.groupe, a.groupe, true));     // chaque agent = 1 maillage (+ ses 2 bras)
 compte(fusionner(scene, scene));
 scene.traverse((o) => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map(toLambert) : toLambert(o.material); });
 console.log(`Fusion : ${avant} objets → ${apres} maillages`);
@@ -173,6 +179,21 @@ function zoneSous(x, y) {
   const hit = ray.intersectObjects(zonesGroupe.children, false)[0];
   return hit ? hit.object.userData.zone : null;
 }
+// Un agent sous le pointeur (son personnage ou son étiquette visible) : on peut cliquer dessus pour lui parler.
+const poseParGroupe = new Map(agentsPoses.map(a => [a.groupe, a]));
+const groupesAgents = agentsPoses.map(a => a.groupe);
+const visible = (o) => { for (let p = o; p; p = p.parent) if (!p.visible) return false; return !o.isSprite || o.material.opacity > .25; };
+function agentSous(v, cam = camera, loin = Infinity) {
+  cam.updateMatrixWorld(); ray.setFromCamera(v, cam); ray.far = loin;
+  const hits = ray.intersectObjects(groupesAgents, true);
+  ray.far = Infinity;
+  for (const h of hits) {
+    if (!visible(h.object)) continue;
+    for (let p = h.object; p; p = p.parent) if (poseParGroupe.has(p)) return poseParGroupe.get(p);
+  }
+  return null;
+}
+const ndcDe = (x, y) => new THREE.Vector2(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1);
 
 /* ================= Vol de la caméra vers une salle ================= */
 let vol = null;
@@ -202,13 +223,16 @@ function vueEnsemble() {
 function afficherFiche(z) {
   const f = $('#fiche');
   const pole = z.pole ? POLES[z.pole] : null;
-  const gens = agentsPoses.filter(a => a.zone === z.id).map(a => a.agent);
+  const gens = agentsPoses.filter(a => a.zone === z.id);
   f.querySelector('.titre').textContent = z.nom;
   f.querySelector('.titre').style.setProperty('--c', z.couleur);
   f.querySelector('.pole').textContent = pole ? `Pôle ${pole.nom}` : '';
   const ul = f.querySelector('ul'); ul.replaceChildren();
-  for (const a of gens) {
-    const li = document.createElement('li');
+  for (const pose of gens) {
+    const a = pose.agent, li = document.createElement('li');
+    li.tabIndex = 0; li.setAttribute('role', 'button'); li.title = `Parler à ${a.prenomEquipe || a.prenom}`;
+    li.addEventListener('click', () => parlerA(pose));
+    li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); parlerA(pose); } });
     const dot = document.createElement('i'); dot.style.background = (ETATS[a.etat] || ETATS['en attente']).couleur;
     const nom = document.createElement('b'); nom.textContent = a.prenom;
     const poste = document.createElement('span'); poste.textContent = a.poste;
@@ -221,10 +245,25 @@ function afficherFiche(z) {
 $('#fiche .fermer').addEventListener('click', vueEnsemble);
 
 /* ================= Visite à la première personne ================= */
+const posAg = new THREE.Vector3();
 const visite = creerVisite({
   canvas, collisions, sol: hauteurSol, portes,
+  agents: agentsPoses.map(pose => { pose.groupe.getWorldPosition(posAg); return { x: posAg.x, y: posAg.y, z: posAg.z, pose }; }),
+  parler: (pose) => parlerA(pose),
+  bloquee: () => fenetre.ouverte(),
   interface: { hud: $('#visite'), reprendre: $('#reprendre'), invite: $('#invite') },
 });
+/* ================= Fenêtre d'un agent : discuter ou lui confier une tâche ================= */
+const fenetre = creerFenetreAgent({
+  agentsPoses,
+  quandFermee: () => { if (visite.actif()) visite.reprendre(); },   // on reprend la marche là où on était
+});
+function parlerA(pose) {
+  if (!pose) return;
+  if (visite.actif()) visite.liberer();
+  survol.hidden = true;
+  fenetre.ouvrir(pose.agent);
+}
 // minimap de la visite (en haut à droite) : plan du bureau, agents et visiteur
 const posAgent = new THREE.Vector3();
 const minimap = creerMinimap({
@@ -299,8 +338,20 @@ canvas.addEventListener('pointerup', (e) => {
   const bouge = Math.hypot(e.clientX - appui.x, e.clientY - appui.y), duree = performance.now() - appui.t;
   appui = null;
   if (e.button !== 0 || bouge > 6 || duree > 600) return;
+  const pose = agentSous(ndcDe(e.clientX, e.clientY));      // un clic sur un agent : sa fenêtre
+  if (pose) { parlerA(pose); return; }
   const z = zoneSous(e.clientX, e.clientY);
   if (z) allerVers(z);
+});
+// en visite : clic au viseur (souris capturée) ou sous le pointeur (mode « glisser ») sur un agent, à moins de 4 m
+let appuiVisite = null;
+canvas.addEventListener('pointerdown', (e) => { if (visite.actif()) appuiVisite = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('click', (e) => {
+  if (!visite.actif() || fenetre.ouverte()) return;
+  let v = null;
+  if (visite.verrouillee()) v = new THREE.Vector2(0, 0);
+  else if (visite.glisser() && appuiVisite && Math.hypot(e.clientX - appuiVisite.x, e.clientY - appuiVisite.y) < 6) v = ndcDe(e.clientX, e.clientY);
+  if (v) parlerA(agentSous(v, visite.camera, 4));
 });
 // double-clic sur une salle : on y entre directement, à la première personne
 canvas.addEventListener('dblclick', (e) => {
@@ -311,10 +362,15 @@ canvas.addEventListener('dblclick', (e) => {
 canvas.addEventListener('pointermove', (e) => {
   if (visite.actif()) { survol.hidden = true; canvas.style.cursor = ''; return; }
   if (e.buttons) { survol.hidden = true; return; }
-  const z = zoneSous(e.clientX, e.clientY);
-  canvas.style.cursor = z ? 'pointer' : '';
-  if (!z) { survol.hidden = true; return; }
-  survol.textContent = z.nom; survol.style.setProperty('--c', z.couleur);
+  const pose = agentSous(ndcDe(e.clientX, e.clientY));
+  const z = pose ? null : zoneSous(e.clientX, e.clientY);
+  canvas.style.cursor = pose || z ? 'pointer' : '';
+  if (!pose && !z) { survol.hidden = true; return; }
+  if (pose) {
+    const a = pose.agent;
+    survol.textContent = `${a.prenomEquipe || a.prenom} · clic pour lui parler`;
+    survol.style.setProperty('--c', a.pole ? POLES[a.pole].couleur : '#b8860b');
+  } else { survol.textContent = z.nom; survol.style.setProperty('--c', z.couleur); }
   survol.style.left = e.clientX + 14 + 'px'; survol.style.top = e.clientY + 14 + 'px';
   survol.hidden = false;
 });
@@ -361,7 +417,7 @@ const touches = new Set();
 const DEPLACE = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
 addEventListener('keydown', (e) => {
   if (e.target.closest && e.target.closest('input, textarea')) return;
-  if (visite.actif()) return;                      // en visite, Échap rend simplement la souris
+  if (visite.actif() || fenetre.ouverte()) return;   // en visite, Échap rend simplement la souris ; fenêtre d'agent : Échap la ferme                      // en visite, Échap rend simplement la souris
   if (e.code === 'Escape') { vueEnsemble(); return; }
   if (DEPLACE.includes(e.code)) { touches.add(e.code); e.preventDefault(); pauseRotation(7); }
 });

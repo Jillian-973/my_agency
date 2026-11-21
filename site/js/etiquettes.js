@@ -45,7 +45,8 @@ export function etiquetteAgent(data, couleurPole, parent) {
     const nomF = '42px "Kenney Future", system-ui, sans-serif', posteF = '500 30px Inter, system-ui, sans-serif', etatF = '600 28px Inter, system-ui, sans-serif';   // nom en sci-fi, le reste en Inter
     g.font = nomF; const w1 = g.measureText(data.prenom).width;
     g.font = posteF; const w2 = g.measureText(data.poste).width;
-    g.font = etatF; const w3 = g.measureText(data.etat).width + 34;
+    const etat = item.etat || data.etat;       // item.etat : état provisoire (une tâche confiée tourne)
+    g.font = etatF; const w3 = g.measureText(etat).width + 34;
     const pad = 22, W = Math.ceil(Math.max(w1, w2, w3) + pad * 2), H = 150;
     c.width = W; c.height = H + 14;
     g.fillStyle = 'rgba(255,255,255,.96)'; g.beginPath(); g.roundRect(3, 3, W - 6, H - 6, 22); g.fill();
@@ -54,9 +55,9 @@ export function etiquetteAgent(data, couleurPole, parent) {
     g.textBaseline = 'alphabetic'; g.textAlign = 'left';
     g.fillStyle = '#111827'; g.font = nomF; g.fillText(data.prenom, pad, 50);
     g.fillStyle = '#4b5563'; g.font = posteF; g.fillText(data.poste, pad, 90);
-    const ec = (ETATS[data.etat] || ETATS['en attente']).couleur;
+    const ec = (ETATS[etat] || ETATS['en attente']).couleur;
     g.fillStyle = ec; g.beginPath(); g.arc(pad + 10, 121, 10, 0, 7); g.fill();
-    g.fillStyle = '#1f2937'; g.font = etatF; g.fillText(data.etat, pad + 30, 131);
+    g.fillStyle = '#1f2937'; g.font = etatF; g.fillText(etat, pad + 30, 131);
     s.material.map.dispose(); s.material.map = texture(c); s.material.needsUpdate = true;
     const h = 1.7; item.base.set(h * c.width / c.height, h, 1);
     s.scale.copy(item.base);
