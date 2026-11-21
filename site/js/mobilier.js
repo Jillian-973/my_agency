@@ -75,11 +75,27 @@ export function personnage(p, x, z, r, s, pose = 'stand', etat = 'au travail') {
   }
   if (pose === 'sit' && etat === 'en pause') {
     bras[1].rotation.x = -1.9; bras[0].rotation.x = -.45;
-    cyl(bras[1], .055, .05, .13, 0, -.68, .02, '#ffffff', 8);
+    g.userData.tasse = cyl(bras[1], .055, .05, .13, 0, -.68, .02, '#ffffff', 8);
   }
-  if (pose === 'sit' && etat === 'au travail') {
-    const ph = R() * 6;
-    for (const [i, a] of bras.entries()) { const b0 = a.rotation.x; animate(a, (t) => { a.rotation.x = b0 + Math.sin(t * 9 + ph + i * 2) * .07; }); }
+  if (pose === 'sit') {
+    // Bras toujours pilotables : l'agent tape au clavier s'il est « au travail » ou si une tâche tourne
+    // (g.userData.tape, réglé par reglerTravail) ; sinon ils reviennent doucement à leur pose de repos.
+    const ph = R() * 6, repos = bras.map(a => a.rotation.x);
+    g.userData.bras = bras;
+    g.userData.tape = etat === 'au travail';
+    g.userData.lacetRepos = g.userData.lacetTravail = r;
+    for (const [i, a] of bras.entries()) {
+      animate(a, (t, dt) => {
+        const tape = g.userData.tape, k = 1 - Math.exp(-dt * 12);
+        const but = tape ? -1.05 + Math.sin(t * 9 + ph + i * 2) * .07 : repos[i];
+        a.rotation.x += (but - a.rotation.x) * k;
+        if (i === 0) {                                // le corps se tourne vers le bureau pendant une tâche
+          const lacet = tape ? g.userData.lacetTravail : g.userData.lacetRepos;
+          if (Math.abs(lacet - g.rotation.y) > 1e-3) g.rotation.y += (lacet - g.rotation.y) * k;
+          if (g.userData.tasse) g.userData.tasse.visible = !tape;
+        }
+      });
+    }
   }
   box(g, .46, .44, .42, 0, 1.08, 0, skin);
   for (const sx of [-.1, .1]) box(g, .06, .08, .02, sx, 1.26, .21, '#1f2937');
@@ -112,6 +128,7 @@ export function poste(p, x, z, r, kind, agent, look, o = {}) {
   if (!agent) { chair(g, 0, .8, Math.PI, o.chair); return g; }
   const tourne = agent.etat === 'en pause' ? .55 : 0;
   const pers = personnage(g, 0, .8, Math.PI + tourne, look, 'sit', agent.etat);
+  pers.userData.lacetTravail = Math.PI;            // face à son clavier
   enregistrerAgent(pers, agent);
   return g;
 }
@@ -119,6 +136,14 @@ export function enregistrerAgent(groupe, agent) {
   const couleur = agent.pole ? POLES[agent.pole].couleur : '#b8860b';
   const lab = etiquetteAgent(agent, couleur, groupe);
   agentsPoses.push({ groupe, agent, etiquette: lab });
+}
+/** Pendant une tâche confiée, l'agent tape à son bureau et son étiquette passe à « au travail ». */
+export function reglerTravail(pose, enTache) {
+  if (!pose || pose.enTache === enTache) return;
+  pose.enTache = enTache;
+  pose.groupe.userData.tape = enTache || pose.agent.etat === 'au travail';
+  pose.etiquette.etat = enTache ? 'au travail' : null;
+  pose.etiquette.dessiner();
 }
 
 /* ---------- meubles ---------- */
