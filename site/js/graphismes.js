@@ -1,14 +1,10 @@
-// Qualité des graphismes, en deux niveaux :
-// - « élevés » : matériaux physiques (reflets doux, brillance des vitres et des métaux) éclairés par une ambiance de ciel
-//   (un dôme dégradé et un soleil, calculés une fois au démarrage), lumière de jour douce ;
+// Qualité des graphismes, en deux niveaux, sous la même lumière (celle du QG d'origine) :
+// - « élevés » : matériaux physiques ; les vitres reflètent une ambiance de ciel (un dôme dégradé et un soleil,
+//   calculés une fois au démarrage) ;
 // - « légers » : matériaux Lambert, bien plus simples à calculer, pour les ordinateurs qui peinent.
 // On passe de l'un à l'autre sans rien reconstruire : chaque objet garde son matériau physique de côté.
 import * as THREE from 'three';
 
-const LUMIERES = {
-  eleve: { ciel: .25, soleil: 2.6, exposition: .95, reflets: .65 },   // réglés à l'œil : contraste franc, reflets discrets
-  leger: { ciel: 1.15, soleil: 2.5, exposition: 1.05 },
-};
 
 /** Ambiance de ciel pour les reflets : dôme bleu en haut, horizon clair, sol chaud, et un soleil. Notre propre scène. */
 function ambianceDeCiel(renderer, directionSoleil) {
@@ -33,16 +29,15 @@ function ambianceDeCiel(renderer, directionSoleil) {
   return cible.texture;
 }
 
-export function creerGraphismes({ renderer, scene, soleil, ciel, versLambert }) {
+export function creerGraphismes({ renderer, scene, soleil, versLambert }) {
   let niveau = null, ambiance = null;
 
-  /** Reflets d'un matériau physique : discrets partout, plus marqués sur les vitres (transparentes et lisses). */
+  /** Seules les vitres (transparentes et lisses) reflètent le ciel : la lumière du reste du QG ne change pas. */
   const regles = new WeakSet();
   function regler1(m) {
     if (!m.isMeshStandardMaterial || regles.has(m)) return;
     regles.add(m);
-    if (m.transparent && m.roughness < .3) { m.envMapIntensity = 1.6; m.roughness = .05; m.metalness = .15; }
-    else m.envMapIntensity = LUMIERES.eleve.reflets;
+    if (m.transparent && m.roughness < .3) { m.envMap = ambiance; m.envMapIntensity = 1.6; m.roughness = .05; m.metalness = .15; m.needsUpdate = true; }
   }
 
   /** Met un objet (et ses enfants) au niveau courant : matériau physique, ou sa version Lambert. */
@@ -66,11 +61,7 @@ export function creerGraphismes({ renderer, scene, soleil, ciel, versLambert }) 
     if (n === niveau) return;
     niveau = n;
     if (n === 'eleve' && !ambiance) ambiance = ambianceDeCiel(renderer, soleil.position);
-    scene.environment = n === 'eleve' ? ambiance : null;
-    const l = LUMIERES[n];
-    ciel.intensity = l.ciel; soleil.intensity = l.soleil; renderer.toneMappingExposure = l.exposition;
     appliquer(scene);
-    if (n === 'eleve') scene.traverse((o) => { if (o.isMesh) for (const m of [].concat(o.material)) regler1(m); });
     renderer.shadowMap.needsUpdate = true;
   }
 

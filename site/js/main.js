@@ -41,9 +41,8 @@ const GPU = dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : 'inconn
 const LOGICIEL = /swiftshader|llvmpipe|basic render|software/i.test(GPU);
 
 const scene = new THREE.Scene();
-const lumiereCiel = new THREE.HemisphereLight(0xdbeeff, 0xb39773, 1.15);   // lumière du ciel (bleutée) et du sol (chaude)
-scene.add(lumiereCiel);
-const sun = new THREE.DirectionalLight(0xfff1dc, 2.5);               // soleil de journée, légèrement doré
+scene.add(new THREE.HemisphereLight(0xd6ecff, 0x9a7b55, 1.15));
+const sun = new THREE.DirectionalLight(0xfff0d6, 2.5);
 sun.position.set(26, 50, 20);
 sun.castShadow = true;
 // ombres plus fines si la carte graphique le permet (la carte d'ombres n'est recalculée que rarement)
@@ -169,7 +168,7 @@ for (const a of [...agentsPoses, ...figurantsPoses]) for (const b of a.groupe.us
 for (const a of [...agentsPoses, ...figurantsPoses]) compte(fusionner(a.groupe, a.groupe, true));     // chaque agent (ou figurant) = 1 maillage (+ ses 2 bras)
 compte(fusionner(scene, scene));
 // graphismes : élevés par défaut, légers sur une carte sans accélération ; le choix fait dans le panneau est gardé
-const graphismes = creerGraphismes({ renderer, scene, soleil: sun, ciel: lumiereCiel, versLambert: toLambert });
+const graphismes = creerGraphismes({ renderer, scene, soleil: sun, versLambert: toLambert });
 let choixGraphismes = null;
 try { choixGraphismes = localStorage.getItem('qg-graphismes'); } catch { /* stockage indisponible */ }
 graphismes.regler(choixGraphismes === 'leger' || choixGraphismes === 'eleve' ? choixGraphismes : LOGICIEL ? 'leger' : 'eleve');
