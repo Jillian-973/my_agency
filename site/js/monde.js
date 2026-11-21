@@ -12,6 +12,22 @@ import {
   sofa, rug, board, bigScreen, stool, roundTable, beanbag, octet, archibald,
 } from './mobilier.js';
 import { POLES, agentParId as ag } from './donnees.js';
+import {
+  tasse, pileLivres, livresDebout, lampeBureau, cadrePhoto, potCrayons, plantePetite, bouteille, carnet, postIts,
+  etagereMurale, plantePendante, horloge, tableauBlanc, affiche, ecranMural, enseignePole,
+} from './details.js';
+
+// Phrase affichée sous le nom de chaque pôle, en grand sur son mur
+const DEVISES = {
+  cabinet: 'Mails, agenda, priorités : on garde le cap.',
+  radar: 'On regarde dehors pour mieux décider dedans.',
+  atelier: 'On cadre, on code, on livre.',
+  forge: 'Chaque tâche répétée devient un outil.',
+  studio: 'Le beau au service du clair.',
+  montage: 'Des rushes au montage final, image par image.',
+  phare: 'Être trouvé, être lu, être suivi.',
+};
+const enseigne = (p, x, y, z, r, pole, w) => enseignePole(p, x, y, z, r, POLES[pole].nom, DEVISES[pole], POLES[pole].couleur, w);
 
 // Bâtiment : x de -20 à 20, z de -14 à 14. Le sol du bureau est à Y0.
 export const BX = 20, BZ = 14, Y0 = 0.35, T = 0.2;
@@ -137,6 +153,8 @@ export function construireMonde(scene) {
         const gt = grp(facade[k].tall, o.x, y, o.z), gl = grp(facade[k].low, o.x, y, o.z);
         wallRun(gt, axis, s0, s1, fixed, 'outer', o, doors); wallRun(gl, axis, s0, s1, fixed, 'low', o, doors);
         if (o.windows?.[k]) windowsOn(gt, axis, o.windows[k], fixed, INWARD[k]);
+        // décor accroché à cette façade (enseigne, étagères, horloge…) : il s'efface avec elle
+        if (o.murs?.[k]) o.murs[k](gt);
       } else wallRun(g, axis, s0, s1, fixed, type, o, doors);
     }
     if (o.fill) o.fill(grp(g));
@@ -163,7 +181,20 @@ export function construireMonde(scene) {
     id: 'bibliotheque', x: -16, z: -10.25, w: 8, d: 7.5, accent: '#b45309', label: 'La Bibliothèque',
     sides: { n: 'f', w: 'f', s: 'part' }, doors: [{ side: 's', off: 2 }], windows: { w: [1.6] },
     floor: { type: 'wood', c: '#b98552' },
+    murs: { w: (m) => { horloge(m, -3.87, 2.45, 1.6, Math.PI / 2, '#7a4f2e'); affiche(m, -3.87, 1.2, -2.6, Math.PI / 2, 'carte', .5); } },
     fill(g) {
+      // en hauteur, sur les bibliothèques : plantes retombantes, piles de livres, globe
+      plantePendante(g, -2.55, 2.2, -3.44, 'b1'); pileLivres(g, 0, 2.2, -3.44, 4, 'b2'); plantePendante(g, 2.55, 2.2, -3.44, 'b3');
+      plantePendante(g, -3.69, 2.0, -.9, 'b4');
+      // échelle appuyée contre les rayonnages
+      // posée devant la bibliothèque du milieu : pied à 0,7 du rayonnage, sommet appuyé sur sa face avant (z -3,23)
+      const ech = grp(g, .45, 0, -2.52); ech.rotation.x = -.3;
+      for (const s of [-1, 1]) box(ech, .05, 2.3, .05, s * .2, 0, 0, '#a16207');
+      for (let i = 0; i < 7; i++) box(ech, .4, .04, .04, 0, .25 + i * .3, 0, '#a16207');
+      // coin lecture : guéridon, livres, tasse de thé
+      const gd = grp(g, -2.6, 0, 2.2); cyl(gd, .2, .22, .02, 0, 0, 0, DARKWOOD, 10); cyl(gd, .03, .03, .55, 0, 0, 0, DARKWOOD, 6); cyl(gd, .26, .26, .04, 0, .55, 0, DARKWOOD, 14);
+      pileLivres(gd, -.05, .59, 0, 3, 'gd'); tasse(gd, .14, .59, .08, '#fef3c7');
+      pileLivres(g, -1.9, 0, 3.2, 5, 'sol1'); pileLivres(g, 3.3, 0, 1.3, 4, 'sol2');
       [-2.55, 0, 2.55].forEach((sx, i) => shelf(g, sx, -3.44, 0, 2.4, 2.2, 10 + i));
       shelf(g, -3.69, -.9, Math.PI / 2, 2.0, 2.0, 20);
       rug(g, .6, .6, 4.2, 2.8, '#7f1d1d');
@@ -173,7 +204,7 @@ export function construireMonde(scene) {
       else sofa(g, -3.3, 2.3, Math.PI / 2, '#991b1b', 1.4);
       const gl = grp(g, 3.3, 0, 2.8); cyl(gl, .2, .25, .05, 0, 0, 0, DARKWOOD, 8); cyl(gl, .03, .03, .8, 0, 0, 0, DARKWOOD, 6); sph(gl, .3, 0, 1.05, 0, '#3b82f6', 2);
       if (aModele('lampRoundFloor')) poser(g, 'lampRoundFloor', 3.4, -2.6, 0);
-      plant(g, 2.4, 3.1, .85);
+      plant(g, 3.45, .3, .85);   // contre la cloison est, hors du passage de la porte (x 1,2 → 2,8)
     },
   });
 
@@ -182,10 +213,17 @@ export function construireMonde(scene) {
     id: 'cabinet', pole: 'cabinet', x: -8, z: -10.25, w: 8, d: 7.5, accent: P.cabinet.couleur, label: 'Cabinet · Tour de Contrôle',
     sides: { n: 'f', w: 'part', s: 'part' }, doors: [{ side: 's', off: 0 }], windows: { n: [2.6] },
     floor: { type: 'tile', c1: tint(P.cabinet.couleur, .8), c2: tint(P.cabinet.couleur, .9) },
+    murs: { n: (m) => { enseigne(m, -.6, 2.06, -3.62, 0, 'cabinet', 2.8); horloge(m, -3.2, 1.75, -3.6, 0); } },
     fill(g) {
       bigScreen(g, -1.2, .9, -3.3, 0, 2.8, 1.15, 'calendar');
+      // en hauteur sur l'armoire : classeurs et plante ; table basse : tasses et magazines
+      livresDebout(g, -3.55, 1.53, 1.25, 7, 'classeurs', Math.PI / 2); plantePendante(g, -3.55, 1.53, 2.15, 'cab');
+      tasse(g, 2.0, .35, 1.55, '#ffffff', 1); tasse(g, 2.35, .35, 2.05, '#93c5fd', 2); carnet(g, 2.25, .35, 1.75, '#1d4ed8', .4);
+      // imprimante et parapheur près de la porte
+      const imp = grp(g, -1.4, 0, 3.15); box(imp, .5, .7, .45, 0, 0, 0, '#cbd5e1'); box(imp, .55, .28, .5, 0, .7, 0, '#e5e7eb'); box(imp, .3, .02, .25, 0, .98, .05, '#f8fafc'); box(imp, .06, .03, .01, .18, .9, .25, glow('#22c55e'), false);
+      tableauBlanc(g, 3.85, .9, -1.4, -Math.PI / 2, 1.3, 'agenda');
       rug(g, -.3, -1.4, 4.8, 2.2, tint(P.cabinet.couleur, .55));
-      poste(g, -2.0, -1.3, Math.PI, 'mail', ag.lea, A(P.cabinet.couleur, 0, '#3b2416', 'long'), { mug: '#ffffff' });
+      poste(g, -2.0, -1.3, Math.PI, 'mail', ag.lea, A(P.cabinet.couleur, 0, '#3b2416', 'long'));
       poste(g, 1.4, -1.3, Math.PI, 'sheet', ag.maya, A(P.cabinet.couleur, 2, '#111111', 'bun', { pants: '#1e3a8a' }));
       sofa(g, 3.25, 1.8, -Math.PI / 2, '#93c5fd', 1.7);
       if (aModele('tableCoffee')) poser(g, 'tableCoffee', 2.2, 1.8, Math.PI / 2, { s: 1.5 }); else roundTable(g, 2.3, 1.8, .36, .42);
@@ -225,6 +263,11 @@ export function construireMonde(scene) {
       sofa(g, 3.0, 1.6, -Math.PI / 2, '#334155', 1.8);
       const tr = grp(g, 3.5, 0, -2.6); box(tr, .4, 1.3, .9, 0, 0, 0, '#3f2a1c'); cyl(tr, .08, .12, .3, 0, 1.3, -.2, '#facc15', 8); sph(tr, .1, 0, 1.68, -.2, '#facc15'); box(tr, .2, .25, .2, 0, 1.3, .25, '#f8fafc');
       tallPlant(g, -3.5, -2.6, .9); plant(g, 3.5, 3.2, .85);
+      // petits détails : dossiers et stylo sur le bureau, tasses sur la table de réunion, trophée et livres en hauteur
+      carnet(dk, -.75, .76, .15, '#111827', .3); potCrayons(dk, .7, .76, -.25);
+      tasse(g, -1.35, .79, 1.45, '#f8fafc', 1); tasse(g, -1.85, .79, 1.95, '#1f2937', 4); carnet(g, -1.6, .79, 1.9, '#b8860b', -.4); bouteille(g, -1.95, .79, 1.4, '#7dd3fc');
+      horloge(g, -3.85, 1.75, 1.7, Math.PI / 2, '#b8860b');
+      if (aModele('lampRoundFloor')) poser(g, 'lampRoundFloor', 3.55, .3, 0);
     },
   });
 
@@ -234,7 +277,14 @@ export function construireMonde(scene) {
     sides: { n: 'f', w: 'part', s: 'part' }, doors: [{ side: 's', off: 0 }],
     floor: { type: 'tile', c1: '#3b2f63', c2: '#4a3b7a' }, wain: '#5b4a96', wall: '#ede9fe',
     fill(g) {
-      box(g, 7.6, 2.3, .15, 0, 0, -3.45, '#1f1b3a');
+      box(g, 7.6, 3.05, .15, 0, 0, -3.45, '#1f1b3a');
+      enseigne(g, 0, 2.24, -3.365, 0, 'radar', 2.9);
+      // en hauteur sur le mur d'écrans : plantes retombantes et horloges des fuseaux
+      plantePendante(g, -3.55, 3.05, -3.45, 'r1'); plantePendante(g, 3.55, 3.05, -3.45, 'r2');
+      tableauBlanc(g, -3.85, .85, -.4, Math.PI / 2, 1.4, 'concurrents');
+      affiche(g, -3.87, 1.0, 1.6, Math.PI / 2, 'carte', .5);
+      tasse(g, -1.55, .74, 2.35, '#c4b5fd', 1); carnet(g, -1.9, .74, 1.9, '#4c1d95', .5);
+      bouteille(g, 2.75, .45, 2.5, '#a78bfa'); plant(g, 3.4, .2, .8);
       const kinds = ['radar', 'web', 'chart', 'seo', 'web', 'radar'];
       for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) bigScreen(g, -2.45 + i * 2.45, .25 + j * 1.0, -3.33, 0, 2.3, .88, kinds[i + j * 3], false);
       poste(g, -2.5, -1.6, 0, 'web', ag.sacha, A(P.radar.couleur, 5, '#e5c07b', 'short'));
@@ -271,6 +321,14 @@ export function construireMonde(scene) {
       ['#f9a8d4', '#a78bfa', '#fde68a', '#5eead4', '#fb923c', '#38bdf8'].forEach((c, i) => box(mb, .4, .32, .02, -.5 + (i % 3) * .5, .55 + Math.floor(i / 3) * .44, .04, c, false));
       if (aModele('loungeDesignSofa')) poser(g, 'loungeDesignSofa', .3, 2.95, Math.PI, { w: 1.9, teinte: { carpetBlue: '#f9a8d4' } }); else sofa(g, .3, 2.95, Math.PI, '#f9a8d4', 1.8);
       plant(g, -3.5, 3.1, .9); tallPlant(g, 3.5, 3.1, .9); plant(g, 3.5, -.8, .75);
+      // grand nom du pôle sur la verrière, étagère d'objets inspirants, affiches et nuancier mural
+      enseigne(g, 0, 1.95, -3.6, 0, 'studio', 3.2);
+      etagereMurale(g, -3.82, 1.65, -1.2, Math.PI / 2, 1.4, ['plante', 'boite', 'livres'], 'studio');
+      affiche(g, -3.86, .7, -1.2, Math.PI / 2, 'abstrait', .45);
+      affiche(g, 3.86, 1.05, 1.0, -Math.PI / 2, 'montagne', .5);
+      plantePendante(g, -3.82, 1.65, 1.8, 'st2');
+      const tabouret = grp(g, -2.55, 0, .7); cyl(tabouret, .18, .2, .5, 0, 0, 0, '#f9a8d4', 12);
+      pileLivres(g, 1.0, .42, 2.95, 2, 'sofa-st'); tasse(g, -.75, .9, .95, '#ec4899');
     },
   });
 
@@ -280,8 +338,14 @@ export function construireMonde(scene) {
     sides: { n: 'part', w: 'f', s: 'part', e: 'part' }, doors: [{ side: 'n', off: .5 }],
     floor: { type: 'carpet', c: '#5b1a1a', dots: ['#7f1d1d', '#991b1b'] }, wain: '#7f1d1d', wall: '#fde2e2',
     fill(g) {
-      box(g, .12, 2.4, 5.2, -4.2, 0, -.4, '#111827');
+      box(g, .12, 3.0, 5.2, -4.2, 0, -.4, '#111827');
       plane(g, 4.8, 1.75, -4.13, 1.35, -.4, screenMat('film'), Math.PI / 2);
+      enseigne(g, -4.13, 2.28, -.4, Math.PI / 2, 'montage', 2.8);
+      // affiches de films, étagère de bobines, seaux de pop-corn sur les sièges
+      affiche(g, -2.9, .95, -3.6, 0, 'film', .5); affiche(g, -1.9, .95, -3.6, 0, 'montagne', .5);
+      etagereMurale(g, 2.3, 1.7, -3.6, 0, 1.2, ['bobines', 'boite'], 'proj');
+      for (const [sx, sz, sy] of [[-1.6, -1.05, .42], [-.3, -.3, .62]]) { const s = grp(g, sx, sy, sz); cyl(s, .06, .045, .12, 0, 0, 0, '#dc2626', 8); sph(s, .05, 0, .13, 0, '#fef3c7', 0); }
+      bouteille(g, -1.6, .42, -1.8, '#ef4444');
       const seat = (sx, sz, sy = 0) => { const s = grp(g, sx, sy, sz, -Math.PI / 2); box(s, .6, .4, .55, 0, 0, 0, '#991b1b'); box(s, .6, .65, .12, 0, .3, -.24, '#b91c1c'); for (const a of [-1, 1]) box(s, .06, .6, .55, a * .32, 0, 0, '#450a0a'); };
       box(g, 1.1, .2, 2.6, -.3, 0, -1.05, '#450a0a');
       for (let i = 0; i < 3; i++) { seat(-1.6, -1.8 + i * .75); seat(-.3, -1.8 + i * .75, .2); }
@@ -342,6 +406,13 @@ export function construireMonde(scene) {
       spin(gear, 'z', .4);
       if (aModele('cardboardBoxClosed')) { poser(p, 'cardboardBoxClosed', 1.0, 3.1, .2, { s: 2.4 }); poser(p, 'cardboardBoxClosed', 1.6, 2.95, -.3, { s: 2.4 }); poser(p, 'cardboardBoxClosed', 1.3, 3.05, .5, { s: 2.2, y: .62 }); }
       cyl(p, .28, .28, .8, -.6, 0, 3.15, '#92400e', 10);
+      // grand nom du pôle sur le mur de pierre, appliques, étagère à bocaux, caisse à outils, plans
+      enseigne(p, -3.22, 1.05, -.9, Math.PI / 2, 'forge', 2.8);
+      for (const z of [-2.0, .55]) { const ap = grp(p, -3.18, 1.85, z); box(ap, .06, .2, .1, 0, 0, 0, '#3f3f46'); sph(ap, .07, .05, .25, 0, glow('#fdba74'), 0); }
+      etagereMurale(p, 1.45, 1.8, -3.12, 0, 1.0, ['bocaux'], 'forge');
+      const caisse = grp(p, .7, 0, 1.6, .3); box(caisse, .5, .25, .3, 0, 0, 0, '#ef4444'); box(caisse, .3, .04, .04, 0, .27, 0, '#1f2937');
+      box(p, .9, .01, .6, .5, 0, .5, '#bfdbfe', false);   // plan déroulé au sol
+      tasse(p, -.6, .8, 3.15, '#78716c', 1);
     },
   });
 
@@ -362,6 +433,10 @@ export function construireMonde(scene) {
     laptop(rc, .4, 1.11, 0, Math.PI, 'mail');
     sofa(g, 3.3, 1.8, -Math.PI / 2, '#fbbf24', 1.6); sofa(g, 3.3, -1.9, -Math.PI / 2, '#fbbf24', 1.6);
     tallPlant(g, -3.5, -3.2, .9); plant(g, -3.5, 1.2, .9);
+    // accueil : sonnette, plante, registre ; écran de bienvenue ; magazines sur la table basse
+    plantePetite(rc, -.8, 1.11, 0, 'accueil'); carnet(rc, -.3, 1.11, .05, '#b8860b', .2); tasse(rc, .95, 1.11, .1, '#ffffff', 2);
+    bigScreen(g, -2.4, 1.0, -3.2, 0, 1.8, 1.0, 'slides');
+    if (aModele('tableCoffee')) { poser(g, 'tableCoffee', 2.4, -.05, Math.PI / 2, { s: 1.5 }); pileLivres(g, 2.4, .35, -.2, 3, 'magazines'); tasse(g, 2.45, .35, .3, '#fbbf24'); }
     etiquette('Le Hall', '#64748b', 0, Y0 + 4.6, -.25, world);
     zones.push({ id: 'hall', nom: 'Le Hall', couleur: '#64748b', pole: null, x: 0, y: Y0, z: -.25, w: 8, d: 7.5, bas: 0 });
   }
@@ -378,6 +453,12 @@ export function construireMonde(scene) {
       bigScreen(g, 0, .9, -3.3, 0, 2.4, 1.2, 'slides');
       board(g, -3.1, 2.6, Math.PI / 2, 1.5);
       plant(g, 3.0, -3.2, 1); plant(g, 3.0, 3.2, .9);
+      // une place préparée par chaise : carnet, tasse ou bouteille d'eau ; horloge et tableau blanc
+      const pl = [[-1.2, -.05], [0, -.05], [1.2, -.05], [-1.2, .65], [0, .65], [1.2, .65]];
+      pl.forEach(([x, z], i) => { carnet(g, x - .12, .79, z, ['#1f2937', '#1d4ed8', '#b91c1c'][i % 3], (i - 2) * .1); (i % 2 ? tasse : bouteille)(g, x + .18, .79, z, ['#ffffff', '#7dd3fc', '#ffffff', '#86efac', '#ffffff', '#7dd3fc'][i]); });
+      cyl(g, .12, .12, .05, 0, .79, .3, '#1f2937', 12);   // pieuvre de visioconférence
+      horloge(g, 3.38, 1.75, -1.4, -Math.PI / 2);
+      tableauBlanc(g, -3.35, .9, -1.4, Math.PI / 2, 1.3, 'reunion');
     },
   });
 
@@ -395,6 +476,12 @@ export function construireMonde(scene) {
       for (const [tx, tz] of [[-1.3, -2.0], [1.4, -1.8], [-.9, 1.1], [3.2, -.2], [.9, 2.9], [1.0, 1.1]]) { roundTable(g, tx, tz, .4); stool(g, tx - .58, tz + .1); stool(g, tx + .58, tz - .1); cyl(g, .04, .035, .1, tx, .79, tz, '#ffffff', 8); }
       if (aModele('kitchenFridge')) poser(g, 'kitchenFridge', -3.95, 2.15, Math.PI / 2);
       plant(g, 4.0, -3.2, 1); tallPlant(g, 4.0, 3.1, .9); plant(g, -3.9, 3.25, .8);
+      // en hauteur au-dessus du comptoir : étagères à tasses et à bocaux ; plante sur le frigo ; gâteau sous cloche
+      etagereMurale(g, -4.3, 1.75, 1.35, Math.PI / 2, 1.0, ['tasses'], 'cafe1');
+      etagereMurale(g, -4.3, 1.75, -1.75, Math.PI / 2, 1.0, ['bocaux'], 'cafe2');
+      plantePendante(g, -3.95, 1.78, 2.15, 'frigo');
+      const cl = grp(ct, -.15, 1.06, .05); cyl(cl, .16, .18, .03, 0, 0, 0, '#f8fafc', 14); cyl(cl, .12, .12, .1, 0, .03, 0, '#a16207', 14); cyl(cl, .12, .12, .02, 0, .13, 0, '#fde68a', 14); sph(cl, .17, 0, .1, 0, mat('#e0f2fe', { transparent: true, opacity: .3 }), 1);
+      tasse(g, -1.15, .79, -1.85, '#fde68a', 1); tasse(g, 1.6, .79, -1.65, '#93c5fd', 3); pileLivres(g, -.75, .79, 1.25, 1, 'journal'); tasse(g, 1.15, .79, 1.25, '#ffffff', 5);
     },
   });
 
@@ -403,7 +490,21 @@ export function construireMonde(scene) {
     id: 'atelier', pole: 'atelier', x: -13.5, z: 10, w: 13, d: 8, accent: P.atelier.couleur, label: "L'Atelier · code",
     sides: { n: 'part', w: 'f', s: 'f' }, doors: [{ side: 'n', off: 4.5 }], windows: { w: [-1.8, 2.2], s: [-3, 1.5] },
     floor: { type: 'tile', c1: tint(P.atelier.couleur, .82), c2: tint(P.atelier.couleur, .9) },
+    murs: {
+      w: (m) => {
+        enseigne(m, -6.37, 1.2, .2, Math.PI / 2, 'atelier', 2.4);
+        horloge(m, -6.37, 1.95, 3.35, Math.PI / 2);
+        etagereMurale(m, -6.27, 2.3, -1.8, Math.PI / 2, 1.3, ['livres', 'plante'], 'at-w');
+      },
+    },
     fill(g) {
+      // en hauteur sur les serveurs : plante et carton ; affiches ; canards en plastique ; raquettes de ping-pong
+      plantePendante(g, -5.9, 2.0, -3.35, 'rack'); box(g, .45, .3, .4, -5.0, 2.0, -3.25, '#b7894f');
+      tableauBlanc(g, -1.5, .9, -3.85, 0, 1.6, 'archi');
+      affiche(g, 2.0, .95, -3.85, 0, 'pixel', .5); affiche(g, 3.0, .95, -3.85, 0, 'abstrait', .5);
+      for (const [x, z] of [[4.85, 2.0], [4.4, 3.1]]) { const r = grp(g, x, .79, z, .6); cyl(r, .08, .08, .015, 0, 0, 0, '#dc2626', 12); box(r, .03, .015, .12, 0, 0, .12, '#7a4f2e'); }
+      sph(g, .03, 4.6, .82, 2.5, '#f8fafc', 0);
+      bouteille(g, 6.0, .45, -3.3, '#4ade80'); tasse(g, 5.9, .45, -2.25, '#22c55e', 1);
       poste(g, -2.2, -1.8, Math.PI, 'code', ag.jade, A(P.atelier.couleur, 0, '#2d6a4f', 'long'));
       poste(g, -2.2, -1.1, 0, 'code', ag.max, A(P.atelier.couleur, 4, '#111111', 'short', { pants: '#1f2937' }));
       poste(g, 1.2, -1.8, Math.PI, 'deploy', ag.zoe, A(P.atelier.couleur, 5, '#c0392b', 'bun'));
@@ -411,7 +512,7 @@ export function construireMonde(scene) {
       poste(g, 4.4, -1.8, Math.PI, 'web', null); poste(g, 4.4, -1.1, 0, 'code', null);
       poste(g, -2.2, 1.7, Math.PI, 'code', null); poste(g, -2.2, 2.4, 0, 'web', null);
       poste(g, 1.2, 1.7, Math.PI, 'term', null); plant(g, 1.2, 2.6, .7);
-      board(g, -6.0, 1.5, Math.PI / 2, 2.2);
+      board(g, -4.4, 3.5, 0, 2.0);   // kanban de Théo, devant le mur sud
       for (const sx of [-5.9, -5.0]) {
         const rk = grp(g, sx, 0, -3.35); box(rk, .8, 2.0, .8, 0, 0, 0, '#1f2937');
         for (let i = 0; i < 8; i++) { box(rk, .66, .18, .02, 0, .15 + i * .22, .41, '#374151', false); box(rk, .05, .05, .02, .26, .22 + i * .22, .42, glow(i % 3 ? '#22c55e' : '#38bdf8'), false); }
@@ -440,6 +541,12 @@ export function construireMonde(scene) {
       sofa(g, -1.6, 3.35, Math.PI, '#f59e0b', 1.9); roundTable(g, -1.6, 2.3, .4, .42);
       beanbag(g, -3.8, 1.2, '#facc15'); beanbag(g, -3.9, 2.4, '#fb923c');
       tallPlant(g, -4.0, -3.4, .9); plant(g, 4.0, 3.4, .9);
+      // grand nom du pôle sur la cloison, trophées en hauteur, mégaphone, magazines et tasses
+      enseigne(g, -4.42, 1.25, -1.6, Math.PI / 2, 'phare', 2.8);
+      etagereMurale(g, 2.6, 1.7, -3.85, 0, 1.6, ['trophee', 'plante', 'trophee', 'livres'], 'phare');
+      const mega = grp(g, -1.4, .47, 2.25, .8); const cn = cyl(mega, .03, .1, .22, 0, 0, 0, '#facc15', 10); cn.rotation.z = Math.PI / 2; cn.position.set(0, .08, 0); box(mega, .04, .08, .04, -.08, 0, 0, '#1f2937');
+      pileLivres(g, -1.8, .47, 2.45, 2, 'mag-phare'); tasse(g, -1.75, .47, 2.05, '#fde68a');
+      horloge(g, -4.42, 1.95, 1.6, Math.PI / 2, '#ca8a04');
     },
   });
 
@@ -463,6 +570,11 @@ export function construireMonde(scene) {
         for (let i = 1; i < 9; i++) { const t = i / 9; sph(g, .055, ax + (bx - ax) * t, 2.4 - Math.sin(Math.PI * t) * .35, az + (bz - az) * t, glow(i % 2 ? '#fde68a' : '#fdba74'), 0).castShadow = false; }
       }
       for (const [px, pz] of [[2.8, -3.3], [2.9, 3.3]]) { box(g, .7, .45, .7, px, 0, pz, '#a16207'); sph(g, .45, px, .85, pz, '#4caf50'); }
+      // tasses et carafe sur les tables, coussins sur les transats, lanternes au sol
+      tasse(g, -1.25, .77, -1.45, '#fb7185', 1); tasse(g, -1.6, .77, -1.75, '#ffffff', 3); bouteille(g, -1.2, .77, -1.85, '#fde68a');
+      tasse(g, 1.7, .77, .45, '#2dd4bf', 2); carnet(g, 1.3, .77, .75, '#f97316', .4);
+      for (let i = 0; i < 3; i++) box(g, .4, .1, .25, -1.7 + i * 1.05, .3, 3.45, ['#fb7185', '#2dd4bf', '#facc15'][i]);
+      for (const [x, z] of [[-2.9, -3.3], [-2.9, 3.3], [-.6, -3.4]]) { const l = grp(g, x, 0, z); box(l, .22, .3, .22, 0, 0, 0, '#1f2937'); box(l, .16, .2, .16, 0, .05, 0, glow('#fde68a')); }
     },
   });
 
@@ -487,7 +599,12 @@ export function construireMonde(scene) {
       for (const sx of [-.24, .24]) for (const sz of [-.53, .53]) box(pin, .06, .82, .06, sx, 0, sz, DARK);
       box(pin, .6, .75, .12, 0, 1.0, -.6, glow('#38bdf8'));
       sofa(g, -1, 3.3, Math.PI, '#7c3aed', 1.8);
-      if (aModele('speaker')) { poser(g, 'speaker', 2.3, 3.4, Math.PI); poser(g, 'speaker', -2.35, 2.2, Math.PI / 2); }
+      if (aModele('speaker')) { poser(g, 'speaker', 2.4, .55, -Math.PI / 2); poser(g, 'speaker', -2.35, 2.2, Math.PI / 2); }
+      // distributeur de friandises, affiches rétro, canettes sur le canapé
+      const dist = grp(g, 2.3, 0, 3.05, -Math.PI / 2); box(dist, .8, 1.9, .6, 0, 0, 0, '#1e293b'); box(dist, .6, 1.3, .02, -.05, .45, .31, glow('#bae6fd'));
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) box(dist, .1, .1, .05, -.27 + j * .14, .55 + i * .3, .28, pick(['#f43f5e', '#facc15', '#22c55e', '#a855f7', '#f97316']), false);
+      affiche(g, -2.6, 1.95, .9, Math.PI / 2, 'pixel', .45); affiche(g, -2.6, 1.95, 2.1, Math.PI / 2, 'abstrait', .45);
+      for (const [x, c] of [[-1.5, '#ef4444'], [-1.25, '#22c55e']]) cyl(g, .035, .035, .11, x, .43, 3.3, c, 8);
       const sign = canvasTex(256, 64, (c) => { c.font = 'bold 44px sans-serif'; c.shadowColor = '#f0abfc'; c.shadowBlur = 12; c.fillStyle = '#f5d0fe'; c.fillText('ARCADE', 38, 48); });
       plane(g, 2.2, .55, -1.15, 2.5, -3.82, new THREE.MeshBasicMaterial({ map: sign, transparent: true, toneMapped: false }));
     },
@@ -510,6 +627,11 @@ export function construireMonde(scene) {
       for (let i = 0; i < 5; i++) { const db = cyl(dr, .07, .07, .3, 0, 0, 0, '#14b8a6', 8); db.rotation.z = Math.PI / 2; db.position.set(-.64 + i * .32, .58, 0); }
       for (const [mx, c] of [[-1.9, '#f472b6'], [-1.0, '#a78bfa']]) rug(g, mx, 2.3, .65, 1.8, c);
       const pb = grp(g, 1.2, 0, 3.3); box(pb, .08, 2.2, .08, 0, 0, 0, DARK); box(pb, .7, .06, .06, -.3, 2.15, 0, DARK); cyl(pb, .2, .2, .9, -.6, 1.0, 0, '#dc2626', 10);
+      // gourdes sur les tapis de course, serviettes pliées, horloge et affiche de motivation
+      for (const tx of [-1.8, -.6]) bouteille(g, tx + .22, 1.5, -3.72, pick(['#38bdf8', '#a3e635']));
+      for (let i = 0; i < 3; i++) box(g, .4, .06, .3, .9, .45 + i * .06, .35 - i * .02, ['#f8fafc', '#5eead4', '#f8fafc'][i]);
+      horloge(g, -2.62, 1.8, 1.0, Math.PI / 2, '#0f766e'); affiche(g, -2.62, .8, -.4, Math.PI / 2, 'sport', .5);
+      etagereMurale(g, .9, 1.7, -3.85, 0, 1.0, ['plante', 'boite'], 'sport');
       plant(g, -2.3, .4, .9);
     },
   });
