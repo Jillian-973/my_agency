@@ -8,7 +8,7 @@ let moteur = null, scene = null, camera = null, modele = null;
 function preparer() {
   moteur = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
   moteur.setPixelRatio(Math.min(devicePixelRatio, 2));
-  moteur.setSize(96, 96, false);
+  moteur.setSize(72, 72, false);                     // la taille exacte du rond de la fiche
   moteur.outputColorSpace = THREE.SRGBColorSpace;
   moteur.toneMapping = THREE.ACESFilmicToneMapping; moteur.toneMappingExposure = 1.05;
   moteur.domElement.className = 'portrait-3d';
@@ -17,8 +17,9 @@ function preparer() {
   scene.add(new THREE.HemisphereLight(0xd6ecff, 0x9a7b55, 1.3));
   const soleil = new THREE.DirectionalLight(0xfff0d6, 2.2); soleil.position.set(1.5, 3, 2.5); scene.add(soleil);
   camera = new THREE.PerspectiveCamera(30, 1, .1, 20);
-  camera.position.set(1.0, 1.58, 2.7);
-  camera.lookAt(0, 1.22, 0);
+  // cadrage centré sur la tête (cheveux compris) avec le haut des épaules
+  camera.position.set(.62, 1.42, 2.25);
+  camera.lookAt(0, 1.3, 0);
 }
 
 /** Dessine le buste d'un agent (apparence = look de mobilier.js) et renvoie le canevas à placer dans la fiche. */
