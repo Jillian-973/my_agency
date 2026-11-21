@@ -302,6 +302,7 @@ const visite = creerVisite({
 /* ================= Fenêtre d'un agent : discuter ou lui confier une tâche ================= */
 const fenetre = creerFenetreAgent({
   agentsPoses,
+  nomDuLieu: (id) => { const z = zones.find(z => z.id === id); return z ? z.nom : ''; },
   quandFermee: () => { if (visite.actif()) visite.reprendre(); },   // on reprend la marche là où on était
 });
 function parlerA(pose) {

@@ -1,9 +1,11 @@
-// Fenêtre d'un agent : « Discuter » (réponse de Claude Code sans aucun outil) et « Confier une tâche »
+// Fiche d'un agent : qui il est (portrait, poste, pôle, lieu), ce qu'il fait en ce moment, son rôle au QG (missions,
+// outils, collègues) ; en bas, « Discuter » (réponse de Claude Code sans aucun outil) et « Confier une tâche »
 // (vraie session Claude Code lancée par live/server.js dans live/travaux/<Prénom>/).
 // Du travail en cours, la page ne reçoit que le nom de l'outil et le nom du fichier, jamais leur contenu.
 import { POLES, ETATS } from './donnees.js';
 import { reglerTravail } from './mobilier.js';
 import { JETON, SANS_SERVEUR, appeler } from './api.js';
+import { portrait } from './portrait.js';
 
 /** Flux d'une tâche (format « server-sent events »), lu avec fetch pour envoyer le jeton dans un en-tête. */
 async function suivreFlux(id, surEvenement) {
@@ -25,7 +27,7 @@ async function suivreFlux(id, surEvenement) {
 }
 
 /* ---------- la fenêtre ---------- */
-export function creerFenetreAgent({ agentsPoses, quandFermee = () => {} }) {
+export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLieu = () => '', voirLieu = null }) {
   const $ = (s) => racine.querySelector(s);
   const racine = document.getElementById('agent');
   const ui = {
@@ -36,6 +38,9 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {} }) {
     suivi: $('.suivi'), statut: $('.statut'), journal: $('.journal'), fin: $('.fin'), compteRendu: $('.compte-rendu'),
     fichiers: $('.fichiers'), cout: $('.cout'), ouvrir: $('.ouvrir'), nouvelle: $('.nouvelle'),
     propositions: $('.propositions'), listeCorbeille: $('.liste-corbeille'), corbeille: $('.corbeille'),
+    fiche: $('.vue-fiche'), portrait: $('.portrait'), lieu: $('.lieu'), activite: $('.activite'), detail: $('.maintenant .detail'),
+    suivreTache: $('.suivre'), missions: $('.missions'), puces: $('.outils-agent .puces'), notePuces: $('.note-puces'),
+    equipe: $('.equipe-agent'), collegues: $('.collegues'), retour: $('.retour'),
   };
   const discussions = new Map();   // id de l'agent → messages (en mémoire seulement, rien n'est enregistré)
   const taches = new Map();        // id de l'agent → { id, journal, fin }
@@ -44,6 +49,67 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {} }) {
   const idEquipe = (a) => a.idEquipe || a.id;               // identifiant dans EQUIPE.md (le CEO s'y appelle Jillian)
   const prenomDe = (a) => a.prenomEquipe || a.prenom;
   const poseDe = (id) => agentsPoses.find(p => p.agent.id === id);
+
+  /* ----- la fiche : qui il est, ce qu'il fait, son rôle ----- */
+  const majuscule = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  let enCoursServeur = [];                                     // tâches vues par le serveur (lancées ici ou ailleurs)
+  function dessinerFiche() {
+    const agent = actuel, pose = poseDe(agent.id);
+    // portrait en buste, à la couleur de son pôle
+    if (pose && pose.groupe.userData.look) ui.portrait.replaceChildren(portrait(pose.groupe.userData.look));
+    const lieu = pose && nomDuLieu(pose.zone);
+    ui.lieu.textContent = lieu ? `Travaille à : ${lieu}` : '';
+    ui.lieu.hidden = !lieu;
+    // son rôle : missions, outils (● branché quand c'est un de ses connecteurs), collègues de pôle
+    const missions = agent.missions && agent.missions.length ? agent.missions : [agent.poste];
+    ui.missions.replaceChildren(...missions.map(m => { const li = document.createElement('li'); li.textContent = majuscule(m); return li; }));
+    const cnx = (connecteurs[idEquipe(agent)] || []).map(c => c.toLowerCase());
+    const branche = (o) => cnx.some(c => o.toLowerCase().includes(c) || c.includes(o.toLowerCase()) || (c === 'google drive' && /google (sheets|slides|docs)/i.test(o)));
+    const outils = [...(agent.outils || [])];
+    for (const c of connecteurs[idEquipe(agent)] || []) {
+      const deja = outils.some(o => o.toLowerCase().includes(c.toLowerCase())) || (c === 'Google Drive' && outils.some(o => /google (sheets|slides|docs)/i.test(o)));
+      if (!deja) outils.push(c);                               // un connecteur que la ligne « Outils » ne nomme pas
+    }
+    ui.puces.replaceChildren(...outils.map(o => { const s = document.createElement('span'); s.textContent = o; if (branche(o)) { s.className = 'branche'; s.title = 'Connecteur branché'; } return s; }));
+    ui.notePuces.hidden = !outils.some(branche);
+    const collegues = agent.pole ? agentsPoses.filter(p => p.agent.pole === agent.pole && p.agent !== agent) : [];
+    ui.equipe.hidden = !collegues.length;
+    ui.collegues.replaceChildren(...collegues.map(p => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = p.agent.prenom; b.title = `Voir la fiche de ${p.agent.prenom} (${p.agent.poste})`;
+      b.addEventListener('click', () => ouvrir(p.agent));
+      return b;
+    }));
+    dessinerMaintenant();
+  }
+  /** « En ce moment » : une tâche (d'ici ou du serveur), une réunion, une pause, ou sa situation habituelle. */
+  function dessinerMaintenant() {
+    if (!actuel) return;
+    const agent = actuel, pose = poseDe(agent.id), t = taches.get(agent.id);
+    const serveur = enCoursServeur.find(x => x.agent === idEquipe(agent));
+    let activite, detail = '';
+    if ((t && !t.fin) || serveur) {
+      const resume = (t && t.consigne) || (serveur && serveur.resume) || '';
+      activite = `Travaille sur une tâche${resume ? ` : « ${resume.length > 140 ? resume.slice(0, 140) + '…' : resume} »` : ''}`;
+      const derniere = t && t.journal.length ? t.journal[t.journal.length - 1] : null;
+      detail = derniere && derniere.outil ? `Dernière action : ${derniere.outil}${derniere.fichier ? ` · ${derniere.fichier}` : ''}` : serveur && serveur.derniere ? `Dernière action : ${serveur.derniere}` : '';
+    } else if (pose && pose.sortie && pose.sortie.motif === 'reunion') {
+      activite = pose.sortie.etape === 'retour' ? 'Revient de réunion' : pose.sortie.etape === 'aller' ? 'Part en réunion' : 'En réunion, dans la salle de réunion';
+    } else if (pose && pose.sortie && pose.sortie.motif === 'pause') {
+      activite = pose.sortie.etape === 'retour' ? 'Revient de sa pause' : `En pause${pose.lieu ? ` · ${nomDuLieu(pose.lieu)}` : ''}`;
+    } else if (t && t.fin) {
+      activite = t.fin.ok ? 'A terminé sa dernière tâche' : 'Sa dernière tâche s\'est arrêtée';
+      detail = 'Le compte rendu est dans « Confier une tâche ».';
+    } else {
+      activite = agent.etat === 'au travail' ? `Au travail${agent.missions && agent.missions[0] ? ` : ${agent.missions[0].charAt(0).toLowerCase() + agent.missions[0].slice(1)}` : ''}`
+        : agent.etat === 'en pause' ? 'En pause à son bureau' : 'En attente d\'une mission';
+    }
+    ui.activite.textContent = activite;
+    ui.detail.textContent = detail; ui.detail.hidden = !detail;
+    ui.suivreTache.hidden = !t;
+    ui.suivreTache.textContent = t && t.fin ? 'Voir le compte rendu' : 'Suivre sa tâche';
+  }
+  ui.suivreTache.addEventListener('click', () => choisir('tache'));
+  ui.retour.addEventListener('click', () => choisir(null));
 
   /* ----- ouverture, fermeture, onglets ----- */
   function ouvrir(agent) {
@@ -62,9 +128,15 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {} }) {
     ui.message.hidden = !(SANS_SERVEUR || !claudeOk);
     if (SANS_SERVEUR) ui.message.textContent = 'Pour parler aux agents, ouvre le QG avec le serveur local : node live/server.js';
     else if (!claudeOk) ui.message.textContent = 'Claude Code est introuvable sur cet ordinateur : les agents ne peuvent pas répondre.';
-    choisir(t ? 'tache' : null);
+    dessinerFiche();
+    choisir(null);                                           // on arrive toujours sur la fiche
     racine.hidden = false;
-    (onglet === 'tache' ? ui.onglets[1] : ui.onglets[0]).focus();
+    $('.fermer').focus();
+    // ce que fait l'agent d'après le serveur (une tâche lancée depuis un autre onglet, par exemple)
+    if (!SANS_SERVEUR) appeler('/api/etat').then((etat) => {
+      enCoursServeur = etat.enCours || []; connecteurs = etat.connecteurs || connecteurs;
+      if (actuel === agent && !onglet) dessinerFiche();
+    }).catch(() => {});
   }
   function fermer() {
     if (racine.hidden) return;
@@ -73,10 +145,13 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {} }) {
     racine.hidden = true; actuel = null;
     quandFermee();
   }
+  /** nom : 'discuter', 'tache', ou null pour la fiche. */
   function choisir(nom) {
     onglet = nom;
     racine.classList.toggle('large', !!nom);          // la fenêtre s'agrandit pour discuter ou suivre une tâche
     for (const b of ui.onglets) b.setAttribute('aria-selected', String(b.dataset.onglet === nom));
+    ui.fiche.hidden = !!nom; ui.retour.hidden = !nom;
+    if (!nom) dessinerMaintenant();
     ui.discuter.hidden = nom !== 'discuter';
     ui.tache.hidden = nom !== 'tache';
     if (nom === 'discuter') { dessinerFil(); ui.saisie.focus(); }
@@ -88,8 +163,9 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {} }) {
     const etat = t && !t.fin ? 'au travail' : actuel.etat;
     ui.etat.textContent = t && !t.fin ? 'au travail · tâche en cours' : etat;
     ui.pastille.style.color = ui.pastille.style.background = (ETATS[etat] || ETATS['en attente']).couleur;
+    if (!onglet) dessinerMaintenant();
   }
-  ui.onglets.forEach(b => b.addEventListener('click', () => choisir(b.dataset.onglet)));
+  ui.onglets.forEach(b => b.addEventListener('click', () => choisir(onglet === b.dataset.onglet ? null : b.dataset.onglet)));   // un second clic ramène à la fiche
   $('.fermer').addEventListener('click', fermer);
   racine.addEventListener('pointerdown', (e) => { if (e.target === racine) fermer(); });
   // Échap ferme la fenêtre (avant les autres raccourcis de la page)
@@ -185,8 +261,8 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {} }) {
     ui.corbeille.textContent = n ? `Mettre ${n} mail${n > 1 ? 's' : ''} à la corbeille` : 'Coche au moins un mail';
     ui.corbeille.disabled = !n;
   }
-  function suivre(agentId, id) {
-    const t = { id, journal: [], fin: null };
+  function suivre(agentId, id, consigne = '') {
+    const t = { id, journal: [], fin: null, consigne };
     taches.set(agentId, t);
     reglerTravail(poseDe(agentId), true);
     const ici = () => actuel && actuel.id === agentId && onglet === 'tache';
@@ -216,7 +292,7 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {} }) {
     try {
       const { id } = await appeler('/api/taches', { agent: idEquipe(agent), consigne });
       ui.consigne.value = '';
-      suivre(agent.id, id);
+      suivre(agent.id, id, consigne.replace(/\s+/g, ' '));
       if (actuel === agent) { majEtat(); dessinerTache(); }
     } catch (err) {
       if (actuel === agent) { ui.message.textContent = err.message; ui.message.hidden = false; }
