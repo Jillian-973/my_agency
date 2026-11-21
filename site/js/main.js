@@ -10,6 +10,7 @@ import { ajusterEtiquettes, ajusterEtiquettesVisite, quitterEtiquettesVisite } f
 import { construireCollisions } from './collisions.js';
 import { creerVisite } from './visite.js';
 import { creerCiel, nomPhase, eclairage } from './planetes.js';
+import { creerMinimap } from './minimap.js';
 import { POLES, ETATS } from './donnees.js';
 
 const $ = (s) => document.querySelector(s);
@@ -123,6 +124,8 @@ function fusionner(racine, dest, garder = false) {
 
 /* ================= Construction ================= */
 const barre = $('#chargement .barre i');
+// polices sci-fi du kit Kenney : chargées avant de dessiner les étiquettes et les enseignes
+await Promise.all(['46px "Kenney Future"', '46px "Kenney Future Narrow"'].map(f => document.fonts.load(f).catch(() => {})));
 await chargerModeles((k) => { barre.style.width = Math.round(k * 100) + '%'; });
 const { facade, zones, world, islet, portes, sol: hauteurSol } = construireMonde(scene);
 // les collisions sont relevées avant la fusion, tant que chaque mur et chaque meuble est encore un objet à part
@@ -221,6 +224,14 @@ $('#fiche .fermer').addEventListener('click', vueEnsemble);
 const visite = creerVisite({
   canvas, collisions, sol: hauteurSol, portes,
   interface: { hud: $('#visite'), reprendre: $('#reprendre'), invite: $('#invite') },
+});
+// minimap de la visite (en haut à droite) : plan du bureau, agents et visiteur
+const posAgent = new THREE.Vector3();
+const minimap = creerMinimap({
+  zones, ui: { canvas: $('#minimap canvas'), lieu: $('#minimap .lieu') },
+  agents: agentsPoses.map(a => { a.groupe.getWorldPosition(posAgent); return { x: posAgent.x, z: posAgent.z }; }),
+  ilot: { x: ISLET.x, z: ISLET.z, r: 4.4 }, pont: { x0: BX, x1: ISLET.x - 2.45, z: ISLET.z }, sortie: { x: BX - .5, z: 4.75 },
+  tuiles: 'ui/kenney/minimap-pack/tuiles-style-d.png',
 });
 const libre = (x, z) => { const s = hauteurSol(x, z); return s !== null && !collisions.bloque(x, z, .32, s); };
 function pointLibre(x, z) {                       // l'endroit libre le plus proche (pour ne pas apparaître dans un meuble)
@@ -417,6 +428,7 @@ function image() {
   visite.mettreAJour(dt);
   ciel.mettreAJour(t, visite.actif() ? visite.camera : camera);
   if (visite.actif()) {
+    minimap.dessiner(visite.position(), visite.orientation());
     ajusterEtiquettesVisite(visite.camera.position);
     renderer.render(scene, visite.camera);
     adapterResolution(dt, t); compterImages(dt);

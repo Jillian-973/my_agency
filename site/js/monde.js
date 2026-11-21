@@ -183,7 +183,7 @@ export function construireMonde(scene) {
     if (o.label) etiquette(o.label, o.accent, o.x + (o.labelDx || 0), y + (o.labelY || 3.6), o.z + (o.labelDz || 0), o.parent || world);
     if (o.id) {
       const base = o.parent ? o.parent.position : new THREE.Vector3();
-      zones.push({ id: o.id, nom: o.label, couleur: o.accent, pole: o.pole || null, x: base.x + o.x, y: base.y + y, z: base.z + o.z, w, d, bas: o.bas ?? 0 });
+      zones.push({ id: o.id, nom: o.label, couleur: o.accent, pole: o.pole || null, x: base.x + o.x, y: base.y + y, z: base.z + o.z, w, d, bas: o.bas ?? 0, sides: s, doors: o.doors || [] });
     }
     return g;
   }

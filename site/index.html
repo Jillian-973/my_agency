@@ -17,51 +17,56 @@
 <canvas id="c" aria-label="Le QG de JILL KORP en 3D"></canvas>
 
 <div id="chargement">
-  <p>Ouverture du QG…</p>
+  <p class="sf-police">Ouverture du QG…</p>
   <div class="barre"><i></i></div>
 </div>
 
-<aside class="panneau">
-  <h1>JILL KORP · le QG</h1>
+<aside class="panneau sf-panneau">
+  <h1 class="sf-titre">JILL KORP · le QG</h1>
   <p class="consigne-haut">Clique sur un pôle pour y voler, double-clique pour y entrer.</p>
   <p class="consigne-visite">Clique sur un pôle pour t'y rendre directement.</p>
   <nav id="legende" aria-label="Aller vers un pôle"></nav>
   <p id="lune" class="lune"></p>
   <div class="actions">
-    <button id="entrer" class="principal" type="button">J'entre</button>
-    <button id="ensemble" type="button">Vue d'ensemble</button>
-    <a href="mentions.html">Mentions</a>
+    <button id="entrer" class="sf-bouton principal" type="button">J'entre</button>
+    <button id="ensemble" class="sf-bouton" type="button">Vue d'ensemble</button>
+    <a class="sf-lien" href="mentions.html">Mentions</a>
   </div>
 </aside>
 
-<section id="fiche" hidden aria-live="polite">
-  <button class="fermer" type="button" aria-label="Fermer et revenir à la vue d'ensemble">×</button>
-  <h2 class="titre"></h2>
+<section id="fiche" class="sf-panneau" hidden aria-live="polite">
+  <button class="fermer sf-bouton gris" type="button" aria-label="Fermer et revenir à la vue d'ensemble">×</button>
+  <h2 class="titre sf-titre"></h2>
   <p class="pole"></p>
   <ul></ul>
   <p class="vide">Personne ne travaille ici en ce moment.</p>
-  <button class="entrer principal" type="button">J'entre dans cette salle</button>
+  <button class="entrer sf-bouton principal" type="button">J'entre dans cette salle</button>
 </section>
 
 <!-- visite à la première personne -->
 <div id="visite" hidden>
   <div class="viseur" aria-hidden="true"></div>
-  <div id="invite" hidden></div>
-  <button class="haut principal" type="button" data-haut>Vue d'en haut</button>
-  <div class="aide-visite"><span class="si-capture">Z Q S D ou flèches : marcher · Maj : courir · souris : regarder · E : ouvrir une porte · Échap : rendre la souris</span><span class="si-glisser">Z Q S D ou flèches : marcher · Maj : courir · glisser avec la souris : regarder · E : ouvrir une porte</span></div>
+  <div id="invite" class="sf-bulle" hidden></div>
+  <aside id="minimap" class="sf-panneau" aria-label="Plan du bureau">
+    <h2 class="sf-titre">Plan</h2>
+    <canvas width="208" height="208"></canvas>
+    <p class="lieu sf-police"></p>
+    <button class="haut sf-bouton principal" type="button" data-haut>Vue d'en haut</button>
+  </aside>
+  <div class="aide-visite sf-bulle"><span class="si-capture">Z Q S D ou flèches : marcher · Maj : courir · souris : regarder · E : ouvrir une porte · Échap : rendre la souris</span><span class="si-glisser">Z Q S D ou flèches : marcher · Maj : courir · glisser avec la souris : regarder · E : ouvrir une porte</span></div>
 </div>
 <div id="reprendre" hidden>
-  <div class="carte">
-    <p><b>Visite en pause</b></p>
+  <div class="carte sf-panneau">
+    <h2 class="sf-titre">Visite en pause</h2>
     <p>La souris est libre.</p>
-    <button type="button" class="principal" data-reprendre>Reprendre la visite</button>
-    <button type="button" data-haut>Vue d'en haut</button>
+    <button type="button" class="sf-bouton principal" data-reprendre>Reprendre la visite</button>
+    <button type="button" class="sf-bouton" data-haut>Vue d'en haut</button>
   </div>
 </div>
 
-<div id="survol" hidden></div>
-<div class="aide">Clic gauche : tourner · molette ou pincer : zoom · clic droit, ZQSD ou flèches : se déplacer · double-clic : entrer · Échap : vue d'ensemble</div>
-<div id="fps"></div>
+<div id="survol" class="sf-bulle" hidden></div>
+<div class="aide sf-bulle">Clic gauche : tourner · molette ou pincer : zoom · clic droit, ZQSD ou flèches : se déplacer · double-clic : entrer · Échap : vue d'ensemble</div>
+<div id="fps" class="sf-bulle"></div>
 
 <script type="module" src="js/main.js"></script>
 </body>

@@ -223,11 +223,11 @@ export function enseignePole(p, x, y, z, r, nom, phrase, couleur, w = 3.6) {
     c.fillStyle = 'rgba(255,255,255,.18)'; c.beginPath(); c.roundRect(4, 4, 1016, 110, [36, 36, 0, 0]); c.fill();
     const fonce = ['#facc15'].includes(couleur);
     c.fillStyle = fonce ? '#1f2937' : '#ffffff'; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.font = '900 118px system-ui, "Segoe UI", sans-serif';
+    c.font = '104px "Kenney Future", system-ui, "Segoe UI", sans-serif';
     try { c.letterSpacing = '14px'; } catch (e) { /* sans letterSpacing */ }
     c.fillText(nom.toUpperCase(), 512, 100);
     try { c.letterSpacing = '0px'; } catch (e) { /* idem */ }
-    c.font = 'italic 500 46px system-ui, "Segoe UI", sans-serif';
+    c.font = '44px "Kenney Future Narrow", system-ui, "Segoe UI", sans-serif';
     c.fillStyle = fonce ? 'rgba(31,41,55,.85)' : 'rgba(255,255,255,.92)';
     c.fillText(phrase, 512, 200);
   });
