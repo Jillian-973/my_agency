@@ -187,14 +187,14 @@ export function construireMonde(scene) {
       plantePendante(g, -2.55, 2.2, -3.44, 'b1'); pileLivres(g, 0, 2.2, -3.44, 4, 'b2'); plantePendante(g, 2.55, 2.2, -3.44, 'b3');
       plantePendante(g, -3.69, 2.0, -.9, 'b4');
       // échelle appuyée contre les rayonnages
-      const ech = grp(g, 1.25, 0, -3.05); ech.rotation.x = -.18;
+      // posée devant la bibliothèque du milieu : pied à 0,7 du rayonnage, sommet appuyé sur sa face avant (z -3,23)
+      const ech = grp(g, .45, 0, -2.52); ech.rotation.x = -.3;
       for (const s of [-1, 1]) box(ech, .05, 2.3, .05, s * .2, 0, 0, '#a16207');
       for (let i = 0; i < 7; i++) box(ech, .4, .04, .04, 0, .25 + i * .3, 0, '#a16207');
       // coin lecture : guéridon, livres, tasse de thé
       const gd = grp(g, -2.6, 0, 2.2); cyl(gd, .2, .22, .02, 0, 0, 0, DARKWOOD, 10); cyl(gd, .03, .03, .55, 0, 0, 0, DARKWOOD, 6); cyl(gd, .26, .26, .04, 0, .55, 0, DARKWOOD, 14);
       pileLivres(gd, -.05, .59, 0, 3, 'gd'); tasse(gd, .14, .59, .08, '#fef3c7');
       pileLivres(g, -1.9, 0, 3.2, 5, 'sol1'); pileLivres(g, 3.3, 0, 1.3, 4, 'sol2');
-      lampeBureau(g, 3.3, 1.35, 2.8, '#b8860b');
       [-2.55, 0, 2.55].forEach((sx, i) => shelf(g, sx, -3.44, 0, 2.4, 2.2, 10 + i));
       shelf(g, -3.69, -.9, Math.PI / 2, 2.0, 2.0, 20);
       rug(g, .6, .6, 4.2, 2.8, '#7f1d1d');
@@ -204,7 +204,7 @@ export function construireMonde(scene) {
       else sofa(g, -3.3, 2.3, Math.PI / 2, '#991b1b', 1.4);
       const gl = grp(g, 3.3, 0, 2.8); cyl(gl, .2, .25, .05, 0, 0, 0, DARKWOOD, 8); cyl(gl, .03, .03, .8, 0, 0, 0, DARKWOOD, 6); sph(gl, .3, 0, 1.05, 0, '#3b82f6', 2);
       if (aModele('lampRoundFloor')) poser(g, 'lampRoundFloor', 3.4, -2.6, 0);
-      plant(g, 2.4, 3.1, .85);
+      plant(g, 3.45, .3, .85);   // contre la cloison est, hors du passage de la porte (x 1,2 → 2,8)
     },
   });
 

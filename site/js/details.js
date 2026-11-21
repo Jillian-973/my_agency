@@ -118,7 +118,8 @@ export function habillerBureau(g, id, w = 1.4, libre = false) {
     (x, z) => tasse(g, x, Y, z, pick(['#ffffff', '#ef4444', '#3b82f6', '#facc15', '#22c55e', '#1f2937', '#ec4899'], h), h() * 6),
     (x, z) => plantePetite(g, x, Y, z, id + 'p'),
     (x, z) => cadrePhoto(g, x, Y, z, id + 'c', (h() - .5) * .8 + (x > 0 ? -.4 : .4)),
-    (x, z) => lampeBureau(g, x, Y, z, pick(['#1f2937', '#f8fafc', '#b8860b', '#ef4444'], h), x > 0 ? Math.PI : 0),
+    // la tête de la lampe éclaire vers -x dans son repère : on la tourne pour qu'elle vise le clavier (0 ; 0,15)
+    (x, z) => lampeBureau(g, x, Y, z, pick(['#1f2937', '#f8fafc', '#b8860b', '#ef4444'], h), Math.atan2(.15 - z, x)),
     (x, z) => pileLivres(g, x, Y, z, 2 + Math.floor(h() * 3), id + 'l', h() * 2),
     (x, z) => potCrayons(g, x, Y, z),
     (x, z) => bouteille(g, x, Y, z, pick(['#38bdf8', '#a3e635', '#f472b6'], h)),
