@@ -114,7 +114,7 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
     if (ouvert !== 'equipe') return;
     // on ne redessine que si quelque chose a changé (sinon le clavier perdrait sa place toutes les 4 secondes)
     const sig = JSON.stringify([serveurOk, enCours.map(t => [t.agent, t.derniere, Math.floor((Date.now() - t.debut) / 60000)]),
-      agentsPoses.map(p => reunion.etape(p)), [...coches].map(p => p.agent.id)]);
+      agentsPoses.map(p => [reunion.etape(p), reunion.enPause(p)]), [...coches].map(p => p.agent.id)]);
     if (!forcer && sig === signature) return;
     signature = sig;
     const focus = document.activeElement && te.contains(document.activeElement) ? document.activeElement.dataset.cle : null;
@@ -155,6 +155,9 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
           if (etape) { const r = document.createElement('small'); r.textContent = ETAPES[etape]; maintenant.append(r); }
         } else if (etape) {
           maintenant.textContent = ETAPES[etape];
+        } else if (reunion.enPause(pose)) {
+          const lieu = zones.find(z => z.id === pose.lieu);
+          maintenant.textContent = `En pause${lieu ? ` · ${lieu.nom.split(' · ')[0]}` : ''}`;
         } else {
           maintenant.textContent = etat.charAt(0).toUpperCase() + etat.slice(1) + (a.missions && a.missions[0] && etat !== 'en attente' ? ` · ${a.missions[0]}` : '');
         }

@@ -6,7 +6,7 @@ import { R, pick, tint, shade, mat, glow, glassMat, grp, box, cyl, sph, plane, s
 import { poser, aModele } from './modeles.js';
 import { etiquetteAgent } from './etiquettes.js';
 import { POLES } from './donnees.js';
-import { habillerBureau } from './details.js';
+import { habillerBureau, hasard } from './details.js';
 
 export const WOOD = '#d6ae84', DARKWOOD = '#7a4f2e', METAL = '#94a3b8', DARK = '#334155';
 
@@ -49,6 +49,15 @@ export function chair(p, x, z, r, c = DARK) {
 /* ---------- personnages ---------- */
 const SKIN = ['#f5d0b0', '#e8b48f', '#c98c5f', '#8d5a3b', '#5c3a24', '#fbe0c8'];
 export const A = (shirt, skin, hair, style, extra = {}) => ({ shirt, skin: SKIN[skin], hair, style, ...extra });
+/** Apparence tirée au hasard (figurants sans étiquette) : r() rend un nombre entre 0 et 1. */
+export function lookFigurant(r) {
+  const p = (l) => l[Math.floor(r() * l.length)];
+  return A(p(['#e11d48', '#0ea5e9', '#84cc16', '#f59e0b', '#8b5cf6', '#14b8a6', '#f97316', '#64748b', '#db2777', '#f8fafc', '#1e293b']),
+    Math.floor(r() * 6), p(['#1a1a1a', '#3b1f14', '#5b3a1e', '#a16207', '#e5c07b', '#7c2d12', '#9ca3af']), p(['short', 'long', 'bun', 'curly', 'short']),
+    { pants: p(['#334155', '#1f2937', '#3b5b8a', '#52525b', '#78350f']), glasses: r() < .25, phase: r() * 6 });
+}
+// Figurants assis aux bureaux libres : pas d'étiquette, pas de fenêtre ; leurs formes sont fusionnées comme celles des agents.
+export const figurantsPoses = [];
 
 /**
  * Personnage cubique. pose : 'stand' ou 'sit'. etat : 'au travail' (tape au clavier, bras animés),
@@ -83,7 +92,7 @@ export function personnage(p, x, z, r, s, pose = 'stand', etat = 'au travail') {
   if (pose === 'sit') {
     // Bras toujours pilotables : l'agent tape au clavier s'il est « au travail » ou si une tâche tourne
     // (g.userData.tape, réglé par reglerTravail) ; sinon ils reviennent doucement à leur pose de repos.
-    const ph = R() * 6, repos = bras.map(a => a.rotation.x);
+    const ph = s.phase ?? R() * 6, repos = bras.map(a => a.rotation.x);   // s.phase : sans toucher au hasard du décor
     g.userData.bras = bras;
     g.userData.tape = etat === 'au travail';
     g.userData.lacetRepos = g.userData.lacetTravail = r;
@@ -128,7 +137,15 @@ export function poste(p, x, z, r, kind, agent, look, o = {}) {
   const d = desk(g, 0, 0, 0, kind, o);
   // chaque bureau est un peu différent : objet métier + assortiment stable tiré de l'identifiant
   habillerBureau(d, agent ? agent.id : `libre-${x.toFixed(1)}-${z.toFixed(1)}-${kind}`, o.w || 1.4, !agent);
-  if (!agent) { chair(g, 0, .8, Math.PI, o.chair); return g; }
+  if (!agent) {
+    // bureau libre : un figurant sans étiquette y travaille (le plus souvent au clavier), pour que l'open space vive
+    const r = hasard(`figurant-${x.toFixed(2)}-${z.toFixed(2)}-${kind}`);
+    const etat = r() < .7 ? 'au travail' : r() < .5 ? 'en pause' : 'en attente';
+    const f = personnage(g, 0, .8, Math.PI + (etat === 'en pause' ? .55 : 0), { ...lookFigurant(r), chair: o.chair }, 'sit', etat);
+    f.userData.lacetTravail = Math.PI;
+    figurantsPoses.push({ groupe: f });
+    return g;
+  }
   const tourne = agent.etat === 'en pause' ? .55 : 0;
   const pers = personnage(g, 0, .8, Math.PI + tourne, look, 'sit', agent.etat);
   pers.userData.lacetTravail = Math.PI;            // face à son clavier
