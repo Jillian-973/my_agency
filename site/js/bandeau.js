@@ -97,11 +97,25 @@ export function creerBandeau() {
     minuteur = setTimeout(suivre, document.hidden ? 15000 : enCours || actifs.size ? 1500 : 6000);
   }
 
+  /* ---------- place : centré dans la fenêtre, sans toucher le panneau ni la minimap ---------- */
+  function placer() {
+    if (racine.hidden || innerWidth <= 640) return;              // téléphone : toute la largeur (feuille de style)
+    const gauche = 306, droite = document.body.classList.contains('en-visite') ? 280 : 14;
+    racine.style.setProperty('--bandeau-max', Math.max(120, innerWidth - gauche - droite) + 'px');
+    const w = racine.offsetWidth;
+    racine.style.setProperty('--bandeau-gauche', Math.round(Math.min(Math.max((innerWidth - w) / 2, gauche), innerWidth - droite - w)) + 'px');
+  }
+  addEventListener('resize', placer);
+  new MutationObserver(placer).observe(document.body, { attributes: true, attributeFilter: ['class'] });   // entrée et sortie de visite
+
   /* ---------- défilement : flèches, molette, glisser ---------- */
   function majFleches() {
+    placer();
     const max = piste.scrollWidth - piste.clientWidth;
     prec.disabled = piste.scrollLeft <= 2; suiv.disabled = piste.scrollLeft >= max - 2;
+    const avant = racine.classList.contains('deborde');
     racine.classList.toggle('deborde', max > 2);
+    if (avant !== max > 2) placer();                               // les flèches changent la largeur
   }
   const pas = () => Math.max(120, piste.clientWidth * .7);
   prec.addEventListener('click', () => piste.scrollBy({ left: -pas(), behavior: 'smooth' }));

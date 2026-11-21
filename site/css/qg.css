@@ -164,16 +164,16 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 .aide { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 12px; padding: 6px 14px;
   white-space: nowrap; max-width: calc(100vw - 220px); overflow: hidden; text-overflow: ellipsis; }
 /* ---------- bandeau du haut : logos des connecteurs ----------
-   Entre le panneau (à gauche) et le bord droit ; il défile avec les flèches, la molette ou en glissant. */
-#bandeau { position: fixed; top: 14px; left: 306px; right: 14px; z-index: 3; display: flex; align-items: center; gap: 4px; padding: 0 4px;
+   Juste assez large pour ses logos, centré dans la fenêtre ; s'il n'y a pas la place, bandeau.js le décale juste assez
+   pour ne pas toucher le panneau (à gauche) ni la minimap de la visite. Il défile avec les flèches, la molette ou en glissant. */
+#bandeau { position: fixed; top: 14px; left: var(--bandeau-gauche, 306px); width: max-content; max-width: var(--bandeau-max, calc(100vw - 320px)); z-index: 3; display: flex; align-items: center; gap: 4px; padding: 0 4px;
   background: var(--sombre); border: 1px solid rgba(170, 195, 231, .4); border-radius: 14px; box-shadow: 0 4px 14px rgba(0, 0, 0, .22); }
-body.en-visite #bandeau { right: 280px; }
 #bandeau > button { flex: none; width: 26px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: rgba(231, 242, 250, .85);
   font: 700 20px/1 var(--texte); cursor: var(--curseur-clic); display: none; }
 #bandeau.deborde > button { display: block; }
 #bandeau > button:hover:not(:disabled), #bandeau > button:focus-visible { background: rgba(255, 255, 255, .12); color: #fff; outline: none; }
 #bandeau > button:disabled { opacity: .25; cursor: var(--curseur); }
-#bandeau .piste { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; margin: 0; padding: 9px 10px; list-style: none;
+#bandeau .piste { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; margin: 0; padding: 9px 10px; list-style: none;
   overflow-x: auto; scrollbar-width: none; scroll-behavior: auto; cursor: grab; -webkit-mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent); }
 #bandeau .piste::-webkit-scrollbar { display: none; }
 #bandeau .piste.glisse { cursor: grabbing; }
@@ -391,7 +391,7 @@ body.en-visite .consigne-visite { display: block; }
 @media (max-width: 640px) {
   .aide, .aide-visite { display: none; }
   .panneau { width: auto; right: 14px; }
-  #bandeau { left: 14px; right: 14px; }
+  #bandeau { left: 14px; right: 14px; width: auto; max-width: none; }
   body:has(#bandeau:not([hidden])) .panneau { top: 78px; }
   #fiche { bottom: 52px; }
   #fps { bottom: 50px; }
