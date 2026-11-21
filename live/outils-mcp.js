@@ -27,7 +27,20 @@ function rangerNom(brut) {
   return { nom, groupe };
 }
 
-/** Une ligne « nom: cible - état » → { nom, groupe, etat }, ou null. La cible (adresse ou commande) est ignorée. */
+/**
+ * Marque d'un connecteur, la même qu'on parte de son nom (« claude.ai Gmail », « plugin:small-business:gmail »)
+ * ou du préfixe de ses outils (« claude_ai_Gmail », « plugin_small-business_gmail ») : « gmail ».
+ * Elle relie les logos du bandeau aux outils qu'utilisent les agents.
+ */
+const ALIAS = { 'atlassian mcp': 'atlassian', 'cloudflare developer platform': 'cloudflare', 'intuit mailchimp': 'mailchimp',
+  'intuit quickbooks': 'quickbooks', 'monday com': 'monday', 'apollo io': 'apollo', 'ringex chat': 'ringex' };
+function marqueDe(nom) {
+  const m = String(nom).replace(/^claude\.ai /i, '').replace(/^claude_ai_/i, '').replace(/^plugin[:_][^:_]+[:_]/i, '')
+    .toLowerCase().replace(/[-_]+/g, ' ').replace(/[^a-z0-9 .]/g, '').replace(/\s+/g, ' ').trim();
+  return ALIAS[m] || m;
+}
+
+/** Une ligne « nom: cible - état » → { nom, groupe, marque, etat }, ou null. La cible (adresse ou commande) est ignorée. */
 function lireLigne(ligne) {
   const l = ligne.replace(/[\u0000-\u001f\u007f]/g, '').trim();
   const i = l.indexOf(': '), j = l.lastIndexOf(' - ');
@@ -35,7 +48,7 @@ function lireLigne(ligne) {
   const brut = l.slice(0, i).trim();
   // un nom qui ressemblerait à une adresse ou à un chemin n'est pas affiché
   if (!brut || brut.length > 80 || /[\\/]|:\/\/|@|\s{2,}/.test(brut)) return null;
-  return { ...rangerNom(brut), etat: etatDe(l.slice(j + 3)) };
+  return { ...rangerNom(brut), marque: marqueDe(brut), etat: etatDe(l.slice(j + 3)) };
 }
 
 function lireSortie(texte) {
@@ -72,4 +85,28 @@ function lireConnecteurs(claude, dossier, forcer = false) {
   return enCours;
 }
 
-module.exports = { lireConnecteurs, lireSortie };
+/* ---------- connecteurs en cours d'utilisation par les agents (pour faire briller leur logo) ---------- */
+const RESTE_ALLUME = 6000;                         // un logo reste en surbrillance 6 s après le dernier appel
+const appels = new Map();                          // id de l'appel → { marque, prenom, tache }
+const derniers = new Map();                        // marque → { fin, prenoms }
+function debutUsage(id, prefixe, prenom, tache) { appels.set(id, { marque: marqueDe(prefixe), prenom, tache }); }
+function finUsage(id) {
+  const a = appels.get(id); if (!a) return;
+  appels.delete(id);
+  const d = derniers.get(a.marque) || { prenoms: new Set() };
+  d.fin = Date.now() + RESTE_ALLUME; d.prenoms.add(a.prenom); derniers.set(a.marque, d);
+}
+function finTache(tache) { for (const [id, a] of appels) if (a.tache === tache) finUsage(id); }
+/** [{ marque, agents: [prénoms] }] : appels en cours, ou terminés il y a moins de 6 s. */
+function usagesActifs() {
+  const parMarque = new Map(), maintenant = Date.now();
+  for (const a of appels.values()) { if (!parMarque.has(a.marque)) parMarque.set(a.marque, new Set()); parMarque.get(a.marque).add(a.prenom); }
+  for (const [m, d] of derniers) {
+    if (d.fin < maintenant) { derniers.delete(m); continue; }
+    if (!parMarque.has(m)) parMarque.set(m, new Set());
+    for (const p of d.prenoms) parMarque.get(m).add(p);
+  }
+  return [...parMarque].map(([marque, agents]) => ({ marque, agents: [...agents] }));
+}
+
+module.exports = { lireConnecteurs, lireSortie, marqueDe, debutUsage, finUsage, finTache, usagesActifs };
