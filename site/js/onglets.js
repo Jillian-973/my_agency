@@ -1,13 +1,32 @@
 // Onglets discrets en bas de l'écran :
 // - « Pôles » : parcourir chaque pôle puis chaque lieu commun, un par un (la caméra y vole, la fiche de la salle s'ouvre) ;
 // - « Équipe » : ce que fait chaque agent en ce moment. Les tâches en cours viennent du serveur local (/api/etat) ;
-//   pour les autres agents, c'est leur situation habituelle (donnees.js).
+//   pour les autres agents, c'est leur situation habituelle (donnees.js). On y coche aussi des agents, et le sifflet
+//   les appelle en réunion (reunion.js).
 import { POLES, ETATS, AGENTS } from './donnees.js';
 import { SANS_SERVEUR, appeler } from './api.js';
 
 const PAUSE_OUVERT = 4000, PAUSE_FERME = 15000;   // rafraîchissement de l'onglet « Équipe » (ouvert / fermé)
 
-export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler, desactive = () => false }) {
+/** Coup de sifflet d'arbitre, joué par le navigateur (une trille courte puis une longue, sans fichier son). */
+function siffler() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = ctx.currentTime, vol = ctx.createGain();
+    vol.gain.value = 0; vol.connect(ctx.destination);
+    const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = 2900;
+    const lfo = ctx.createOscillator(), prof = ctx.createGain(); lfo.frequency.value = 32; prof.gain.value = 140;
+    lfo.connect(prof); prof.connect(osc.frequency); osc.connect(vol);
+    for (const [debut, duree] of [[0, .16], [.24, .42]]) {
+      vol.gain.setValueAtTime(0, t0 + debut); vol.gain.linearRampToValueAtTime(.07, t0 + debut + .02);
+      vol.gain.setValueAtTime(.07, t0 + debut + duree - .04); vol.gain.linearRampToValueAtTime(0, t0 + debut + duree);
+    }
+    osc.start(t0); lfo.start(t0); osc.stop(t0 + .75); lfo.stop(t0 + .75);
+    osc.onended = () => ctx.close();
+  } catch { /* pas de son : tant pis */ }
+}
+
+export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler, reunion, apresSifflet = () => {}, desactive = () => false }) {
   const $ = (s, r = document) => r.querySelector(s);
   const barre = $('#onglets');
   const boutons = [...barre.querySelectorAll('[data-tiroir]')];
@@ -78,7 +97,9 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
 
   /* ---------- Équipe : regroupée par pôle, le Quartier Général à la fin ---------- */
   const te = tiroirs.equipe, groupes = $('.groupes', te), resume = $('.resume', te), compte = $('.compte', barre);
-  let enCours = [], serveurOk = !SANS_SERVEUR, minuteur = 0;
+  let enCours = [], serveurOk = !SANS_SERVEUR, minuteur = 0, signature = '';
+  const coches = new Set();                                   // agents cochés pour la réunion (gardés entre deux rafraîchissements)
+  const ETAPES = { aller: 'En route vers la salle de réunion', reunion: 'En réunion', retour: 'Retourne à son bureau' };
   const idEquipe = (a) => a.idEquipe || a.id;
   const duree = (debut) => {
     const m = Math.max(0, Math.round((Date.now() - debut) / 60000));
@@ -86,8 +107,15 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
   };
   const familles = [...Object.keys(POLES).map(k => ({ cle: k, nom: POLES[k].nom, couleur: POLES[k].couleur })), { cle: null, nom: 'Quartier Général', couleur: '#c9971c' }];
 
-  function dessinerEquipe() {
+  function dessinerEquipe(forcer = false) {
     if (ouvert !== 'equipe') return;
+    // on ne redessine que si quelque chose a changé (sinon le clavier perdrait sa place toutes les 4 secondes)
+    const sig = JSON.stringify([serveurOk, enCours.map(t => [t.agent, t.derniere, Math.floor((Date.now() - t.debut) / 60000)]),
+      agentsPoses.map(p => reunion.etape(p)), [...coches].map(p => p.agent.id)]);
+    if (!forcer && sig === signature) return;
+    signature = sig;
+    const focus = document.activeElement && te.contains(document.activeElement) ? document.activeElement.dataset.cle : null;
+    dessinerReunion();
     const parAgent = new Map(enCours.map(t => [t.agent, t]));
     const n = enCours.length;
     resume.textContent = !serveurOk
@@ -102,7 +130,14 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
       for (const pose of membres) {
         const a = pose.agent, t = parAgent.get(idEquipe(a));
         const li = document.createElement('li'); if (t) li.className = 'en-tache';
-        const b = document.createElement('button'); b.type = 'button';
+        const etape = reunion.etape(pose), dejaLa = !!etape && etape !== 'retour';
+        if (dejaLa) li.classList.add('en-reunion');
+        const coche = document.createElement('input'); coche.type = 'checkbox'; coche.dataset.cle = 'c-' + a.id;
+        coche.checked = dejaLa || coches.has(pose); coche.disabled = dejaLa;
+        coche.setAttribute('aria-label', `Inviter ${a.prenom} à la réunion`);
+        coche.title = dejaLa ? `${a.prenom} est déjà en réunion` : `Inviter ${a.prenom} à la réunion`;
+        coche.addEventListener('change', () => { if (coche.checked) coches.add(pose); else coches.delete(pose); dessinerEquipe(); });
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'agent'; b.dataset.cle = 'b-' + a.id;
         b.title = t ? `Suivre la tâche de ${a.prenomEquipe || a.prenom}` : `Parler à ${a.prenomEquipe || a.prenom}`;
         b.addEventListener('click', () => parler(pose));
         const etat = t ? 'au travail' : a.etat;
@@ -114,19 +149,54 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
           maintenant.textContent = t.mode === 'corbeille' ? `${t.resume}, ${duree(t.debut)}`
             : `Tâche en cours ${duree(t.debut)}${t.resume ? ` : « ${t.resume}${t.resume.length >= 160 ? '…' : ''} »` : ''}`;
           if (t.derniere) { const d = document.createElement('small'); d.textContent = `Dernière action : ${t.derniere}`; maintenant.append(d); }
+          if (etape) { const r = document.createElement('small'); r.textContent = ETAPES[etape]; maintenant.append(r); }
+        } else if (etape) {
+          maintenant.textContent = ETAPES[etape];
         } else {
           maintenant.textContent = etat.charAt(0).toUpperCase() + etat.slice(1) + (a.missions && a.missions[0] && etat !== 'en attente' ? ` · ${a.missions[0]}` : '');
         }
+        if (dejaLa && !t) dot.style.background = ETATS['en réunion'].couleur;
         b.append(dot, nom, poste, maintenant);
-        const voir = document.createElement('button'); voir.type = 'button'; voir.className = 'voir';
-        voir.textContent = 'Voir'; voir.title = `Voler jusqu'au bureau de ${a.prenom}`;
-        voir.addEventListener('click', () => { const z = zones.find(z => z.id === pose.zone); if (z) allerVers(z); });
-        li.append(b, voir); ul.append(li);
+        const voir = document.createElement('button'); voir.type = 'button'; voir.className = 'voir'; voir.dataset.cle = 'v-' + a.id;
+        voir.textContent = 'Voir'; voir.title = dejaLa ? 'Voler jusqu\'à la salle de réunion' : `Voler jusqu'au bureau de ${a.prenom}`;
+        voir.addEventListener('click', () => { const z = zones.find(z => z.id === (dejaLa ? 'reunion' : pose.zone)); if (z) allerVers(z); });
+        li.append(coche, b, voir); ul.append(li);
       }
       sec.append(h, ul);
       return sec;
     }));
+    if (focus) { const e = te.querySelector(`[data-cle="${focus}"]`); if (e) e.focus(); }
   }
+
+  /* ---------- réunion : cocher des agents, siffler, puis « Fin de réunion » ---------- */
+  const barreReunion = $('.reunion', te), sifflet = $('.sifflet', barreReunion), fin = $('.fin', barreReunion), tous = $('.tous', barreReunion), etatReunion = $('.etat-reunion', barreReunion);
+  const invitables = () => agentsPoses.filter(p => { const e = reunion.etape(p); return !e || e === 'retour'; });
+  function dessinerReunion() {
+    for (const p of coches) if (reunion.etape(p) && reunion.etape(p) !== 'retour') coches.delete(p);
+    const n = coches.size, presents = reunion.presents();
+    sifflet.disabled = !n;
+    $('span', sifflet).textContent = n ? `Siffler la réunion (${n})` : 'Siffler la réunion';
+    sifflet.title = n ? `Appeler ${n} agent${n > 1 ? 's' : ''} en salle de réunion` : 'Coche d\'abord les agents à réunir';
+    fin.hidden = !presents;
+    etatReunion.textContent = presents ? `${presents} en réunion` : n ? '' : 'Coche des agents pour les réunir.';
+    const liste = invitables();
+    tous.hidden = !liste.length;
+    tous.textContent = liste.every(p => coches.has(p)) ? 'Tout décocher' : 'Tout cocher';
+  }
+  tous.addEventListener('click', () => {
+    const liste = invitables();
+    if (liste.every(p => coches.has(p))) coches.clear(); else liste.forEach(p => coches.add(p));
+    dessinerEquipe();
+  });
+  sifflet.addEventListener('click', () => {
+    const liste = [...coches];
+    coches.clear();
+    if (!reunion.inviter(liste)) { dessinerEquipe(); return; }
+    siffler();
+    ouvrir(null);
+    apresSifflet();
+  });
+  fin.addEventListener('click', () => { reunion.terminer(); dessinerEquipe(); });
 
   async function rafraichir() {
     clearTimeout(minuteur);
@@ -140,5 +210,5 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
   }
   rafraichir();
 
-  return { suivreZone, fermer: () => ouvrir(null), rafraichir };
+  return { suivreZone, fermer: () => ouvrir(null), rafraichir, redessiner: () => dessinerEquipe() };
 }
