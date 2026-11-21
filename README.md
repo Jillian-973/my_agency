@@ -38,6 +38,19 @@ Pour parler aux agents, [Claude Code](https://claude.com/claude-code) doit être
 - **Graphismes** : ombres adoucies et plus fines (carte d'ombres 4096 quand la carte graphique le permet, recalculée seulement quand une façade change), matériaux physiques sous la lumière d'origine du QG, et des vitres qui reflètent une ambiance de ciel calculée au démarrage. Les personnages qui marchent ont une ombre douce sous les pieds. Le panneau propose « Graphismes : élevés / légers » (choix gardé dans le navigateur) ; si l'ordinateur peine même à la plus basse résolution, le QG passe tout seul en graphismes légers (matériaux Lambert, bien plus simples à calculer).
 - **Interface** : panneaux, boutons et viseur dans le style sci-fi de Kenney ; titres en Kenney Future, tout le reste en Inter. Chaque fenêtre a sa forme (en-tête doré pour le panneau principal, en-tête à la couleur du pôle pour la fiche d'une salle, onglet en biseau pour un agent, verre aux coins coupés pour la minimap, onglet à encoche pour la pause), et la fiche, la fenêtre d'un agent et les boutons prennent la couleur de son pôle. Le bouton fermer et les curseurs de la souris viennent aussi du pack.
 
+## Depuis Claude Code : la CEO distribue le travail
+
+Le MCP du QG (`live/mcp-qg.js`, sans dépendance) fait passer tes demandes par Jillian, la CEO, qui pilote toute l'équipe :
+
+1. Démarre le QG (`node live/server.js`), puis une session `claude` dans le dossier du projet. La première fois, Claude Code demande d'approuver le serveur MCP « qg » du projet (`.mcp.json`).
+2. Tape `/qg` suivi de ta demande, par exemple `/qg prépare la page d'accueil du nouveau site` (la commande est dans `.claude/commands/qg.md` ; `/qg` seul donne l'état du QG).
+3. Jillian connaît chaque agent (poste, missions, outils, connecteurs, modèle) : elle découpe la demande en missions, attribue chacune au bon agent, et enchaîne des étapes quand une mission a besoin du résultat d'une autre (par exemple, Max code puis Théo relit). Le serveur lance les tâches dès qu'une place se libère (4 à la fois) ; tu les vois travailler dans le QG, et la CEO apparaît « au travail » tant qu'elle pilote.
+4. À la fin, Jillian rédige le compte rendu final : il revient dans Claude Code et il est rangé dans `live/travaux/Jillian/missions/`.
+
+Outils du MCP : `demander_au_ceo`, `suivre_mission` (avec attente jusqu'à la fin), `etat_du_qg`. Le MCP joint le serveur grâce à `live/.qg-session.json` (adresse et jeton du démarrage en cours, jamais versionné). Un agent du QG ne peut jamais rappeler la CEO. La planification et le compte rendu coûtent chacun au plus 0,50 $ (modèle de la CEO), en plus des tâches des agents.
+
+Pour l'utiliser depuis n'importe quel dossier, ajoute une fois le MCP à ta configuration personnelle de Claude Code (`claude mcp add --scope user qg -- node "<chemin du projet>/live/mcp-qg.js"`) et copie `.claude/commands/qg.md` dans `~/.claude/commands/`.
+
 ## Organisation
 
 ```

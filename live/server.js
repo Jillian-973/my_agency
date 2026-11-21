@@ -36,6 +36,9 @@ const OUTILS_TACHE = ['Read', 'Write', 'Edit', 'WebSearch', 'WebFetch'];
 const BUDGET_CORBEILLE = 0.5;      // dollars pour mettre à la corbeille les mails que tu as validés
 const CNX = require('./connecteurs.js');
 const MOD = require('./modeles.js');
+const { creerCeo } = require('./ceo.js');
+// fichier lu par le MCP du QG (live/mcp-qg.js) pour joindre ce serveur : adresse et jeton de ce démarrage, jamais versionné
+const SESSION_MCP = path.join(__dirname, '.qg-session.json');
 const OUTILS = require('./outils-mcp.js');
 
 // Jeton secret, recréé à chaque démarrage : il est glissé dans la page du QG et exigé par l'API.
@@ -163,7 +166,7 @@ function fichierDe(entree) {
  *   tous les autres outils de tous les connecteurs interdits, et la session attend que les connecteurs soient branchés ;
  * - mode « corbeille » : uniquement trash_thread, sur la liste exacte de mails que tu as validée dans la page.
  */
-function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null } = {}) {
+function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null, quandFini = null } = {}) {
   const id = crypto.randomUUID();
   const dossier = path.join(TRAVAUX, agent.prenom);
   fs.mkdirSync(dossier, { recursive: true });
@@ -177,6 +180,8 @@ function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null } = 
   const modele = mode === 'corbeille' ? MOD.CORBEILLE : MOD.modeleDe(agent.id);
   const budgetMax = mode === 'corbeille' ? BUDGET_CORBEILLE : modele.plafond;
   diffuser(t, { type: 'debut', prenom: agent.prenom });
+  // déclarée avant demarrer() : pour un agent sans connecteur, demarrer() lance la session tout de suite (sans attente)
+  let enfant = null;
   demarrer().catch((e) => terminer({ erreur: `Impossible de lancer Claude Code : ${e.message}` }));
 
   async function demarrer() {
@@ -186,7 +191,8 @@ function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null } = 
       'Tu peux lire, écrire et modifier des fichiers de ce dossier et chercher sur le web' + (avecConnecteurs ? '. ' + CNX.consignes(agent.id) + ' ' : ' ; rien d\'autre. ') +
       'Quand tu as fini, termine par un compte rendu court en français : ce que tu as fait, les fichiers créés, et ce qu\'il reste éventuellement à faire.';
     const fin = ['--permission-mode', 'acceptEdits', '--max-budget-usd', String(budgetMax), '--output-format', 'stream-json', '--verbose'];
-    let args, env = process.env;
+    // QG_AGENT : le MCP du QG refuse toute demande venant d'une session d'agent (un agent ne rappelle pas la CEO)
+    let args, env = { ...process.env, QG_AGENT: '1' };
     if (!avecConnecteurs) {
       args = ['-p', '--model', modele.id, ...COMMUNES, '--tools', OUTILS_TACHE.join(','), '--allowedTools', OUTILS_TACHE.join(','), ...fin];
     } else {
@@ -203,15 +209,14 @@ function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null } = 
       const outilsFichiers = mode === 'corbeille' ? [] : OUTILS_TACHE;
       // sans --strict-mcp-config : la session charge tes connecteurs claude.ai ; --disallowedTools les cache tous sauf les outils prévus
       args = ['-p', '--model', modele.id, '--restricted', '--disable-slash-commands', '--tools', outilsFichiers.join(','),
-        '--allowedTools', [...outilsFichiers, ...r.autorises].join(','), '--disallowedTools', r.interdits.join(','), ...fin];
-      env = { ...process.env, MCP_CONNECTION_NONBLOCKING: 'false' };   // attendre que les connecteurs soient branchés avant de commencer
+        '--allowedTools', [...outilsFichiers, ...r.autorises].join(','), '--disallowedTools', [...r.interdits, 'mcp__qg'].join(','), ...fin];
+      env = { ...process.env, QG_AGENT: '1', MCP_CONNECTION_NONBLOCKING: 'false' };   // attendre que les connecteurs soient branchés avant de commencer
     }
     args.push('--append-system-prompt', systeme);
     if (args.join(' ').length > 30000) return terminer({ erreur: 'Liste d\'outils trop longue pour la ligne de commande.' });
     lancer(args, env);
   }
 
-  let enfant = null;
   function lancer(args, env) {
     try { enfant = spawn(CLAUDE, args, { cwd: dossier, windowsHide: true, env }); }
     catch (e) { return terminer({ erreur: e.message }); }
@@ -276,9 +281,20 @@ function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null } = 
     });
     for (const res of t.abonnes) res.end();
     t.abonnes.clear();
+    if (quandFini) { try { quandFini(t, fin); } catch (e) { console.error('Fin de tâche :', e.message); } }   // une mission de la CEO avance
   }
   return t;
 }
+
+/* ===================== La CEO : demandes venues de Claude Code (MCP du QG) ===================== */
+const CEO = creerCeo({
+  equipe: () => EQUIPE, claude: CLAUDE, communes: COMMUNES, modeleDe: MOD.modeleDe, connecteursDe: CNX.connecteursDe,
+  lancer: (agent, consigne, opts) => lancerTache(agent, consigne, opts),
+  occupe: (id) => enCours().some(t => t.agent === id),
+  places: () => TACHES_MAX - enCours().length,
+  dossierCeo: path.join(TRAVAUX, (EQUIPE.jillian && EQUIPE.jillian.prenom) || 'Jillian'),
+  env: { QG_AGENT: '1' },
+});
 
 function ouvrirDossier(dossier) {
   fs.mkdirSync(dossier, { recursive: true });
@@ -324,8 +340,24 @@ async function api(req, res, url) {
     const connecteurs = Object.fromEntries(Object.keys(EQUIPE).filter(CNX.aDesConnecteurs).map(id => [id, CNX.connecteursDe(id)]));
     return json(res, 200, { claude: !!CLAUDE, enCours: enCours().map(t => ({ id: t.id, agent: t.agent, mode: t.mode, debut: t.debut, resume: t.resume, derniere: t.derniere })), max: TACHES_MAX, connecteurs, actifs: OUTILS.usagesActifs(),
       modeles: Object.fromEntries(Object.keys(EQUIPE).map(id => { const m = MOD.modeleDe(id); return [id, { nom: m.nom, plafond: m.plafond }]; })),
-      discussion: MOD.DISCUSSION.nom });
+      discussion: MOD.DISCUSSION.nom,
+      missions: CEO.actives().map(m => ({ id: m.id, demande: m.demande.slice(0, 160), etat: m.etat, etape: m.etape,
+        total: m.sousTaches.length, faites: m.sousTaches.filter(st => st.etat === 'terminee' || st.etat === 'echec').length })) });
   }
+
+  // la CEO : une demande, qu'elle découpe et distribue à l'équipe (appelée par le MCP du QG depuis Claude Code)
+  if (req.method === 'POST' && p === '/api/ceo') {
+    if ((req.headers['content-type'] || '').split(';')[0] !== 'application/json') return json(res, 415, { erreur: 'JSON attendu.' });
+    let corps; try { corps = await lireCorps(req); } catch (e) { return json(res, 400, { erreur: e.message }); }
+    const demande = texte(corps.demande, 8000);
+    if (!demande) return json(res, 400, { erreur: 'Demande vide.' });
+    if (!CLAUDE) return json(res, 503, { erreur: 'Claude Code est introuvable sur cet ordinateur (commande « claude »).' });
+    if (CEO.actives().length >= 3) return json(res, 429, { erreur: 'La CEO pilote déjà 3 missions : attends qu\'une se termine.' });
+    return json(res, 201, await CEO.demander(demande));
+  }
+  if (req.method === 'GET' && p === '/api/missions') return json(res, 200, { missions: CEO.liste() });
+  const mm = req.method === 'GET' && p.match(/^\/api\/missions\/([0-9a-f-]{36})$/);
+  if (mm) { const m = CEO.lire(mm[1]); return m ? json(res, 200, m) : json(res, 404, { erreur: 'Mission inconnue (le serveur a peut-être redémarré).' }); }
 
   // onglet « Outils » : nom et état de chaque connecteur (claude mcp list), jamais d'adresse, de commande ni d'erreur
   if (req.method === 'GET' && p === '/api/outils') {
@@ -433,7 +465,14 @@ server.on('error', (err) => {
   process.exit(1);
 });
 
+// le MCP du QG trouve ce serveur grâce à ce fichier (effacé à l'arrêt)
+const effacerSession = () => { try { if (JSON.parse(fs.readFileSync(SESSION_MCP, 'utf8')).pid === process.pid) fs.unlinkSync(SESSION_MCP); } catch { /* déjà parti */ } };
+process.on('exit', effacerSession);
+for (const s of ['SIGINT', 'SIGTERM']) process.on(s, () => process.exit(0));
+
 server.listen(PORT, HOST, () => {
+  try { fs.writeFileSync(SESSION_MCP, JSON.stringify({ port: PORT, jeton: JETON, pid: process.pid }), { mode: 0o600 }); }
+  catch (e) { console.error('MCP du QG : impossible d\'écrire', SESSION_MCP, e.message); }
   console.log(`QG JILL KORP prêt : http://${HOST}:${PORT}`);
   console.log('Accessible uniquement depuis cet ordinateur. Ctrl+C pour arrêter.');
   console.log(CLAUDE ? `Claude Code : ${CLAUDE}` : 'Attention : Claude Code introuvable, les agents ne pourront pas répondre.');

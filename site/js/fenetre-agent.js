@@ -54,7 +54,7 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
 
   /* ----- la fiche : qui il est, ce qu'il fait, son rôle ----- */
   const majuscule = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-  let enCoursServeur = [];                                     // tâches vues par le serveur (lancées ici ou ailleurs)
+  let enCoursServeur = [], missionsServeur = [];              // tâches vues par le serveur (lancées ici, ailleurs ou par la CEO), missions de la CEO
   function dessinerFiche() {
     const agent = actuel, pose = poseDe(agent.id);
     // portrait en buste, à la couleur de son pôle
@@ -93,7 +93,12 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
     const agent = actuel, pose = poseDe(agent.id), t = taches.get(agent.id);
     const serveur = enCoursServeur.find(x => x.agent === idEquipe(agent));
     let activite, detail = '';
-    if ((t && !t.fin) || serveur) {
+    if (idEquipe(agent) === 'jillian' && missionsServeur.length && !(t && !t.fin)) {
+      const m = missionsServeur[0];
+      activite = missionsServeur.length > 1 ? `Pilote ${missionsServeur.length} missions pour toi` : `Pilote une mission : « ${m.demande}${m.demande.length >= 160 ? '…' : ''} »`;
+      detail = m.etat === 'planification' ? 'Elle prépare le plan et choisit les agents.' : m.etat === 'synthese' ? 'Elle rédige son compte rendu.'
+        : `${m.faites}/${m.total} missions terminées${m.total ? ` · étape ${m.etape}` : ''}`;
+    } else if ((t && !t.fin) || serveur) {
       const resume = (t && t.consigne) || (serveur && serveur.resume) || '';
       activite = `Travaille sur une tâche${resume ? ` : « ${resume.length > 140 ? resume.slice(0, 140) + '…' : resume} »` : ''}`;
       const derniere = t && t.journal.length ? t.journal[t.journal.length - 1] : null;
@@ -334,18 +339,26 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
     dessinerTache(); ui.consigne.focus();
   });
 
-  /* ----- au chargement : les tâches qui tournent déjà (page rechargée) ----- */
-  if (!SANS_SERVEUR) {
-    appeler('/api/etat').then((etat) => {
+  /* ----- toutes les 5 s : les tâches qui tournent au serveur (page rechargée, ou lancées par la CEO) ----- */
+  async function synchroniser() {
+    try {
+      const etat = await appeler('/api/etat');
       claudeOk = !!etat.claude;
       connecteurs = etat.connecteurs || {};
       modeles = etat.modeles || {}; modeleDiscussion = etat.discussion || '';
-      for (const { id, agent } of etat.enCours || []) {
+      enCoursServeur = etat.enCours || []; missionsServeur = etat.missions || [];
+      for (const { id, agent } of enCoursServeur) {
         const pose = agentsPoses.find(p => idEquipe(p.agent) === agent);
-        if (pose && !taches.has(pose.agent.id)) suivre(pose.agent.id, id);
+        const t = pose && taches.get(pose.agent.id);
+        if (pose && (!t || (t.fin && t.id !== id))) suivre(pose.agent.id, id);   // l'agent se met à taper, son journal se remplit
       }
-    }).catch(() => { /* serveur ancien ou injoignable : la fenêtre l'indiquera à l'usage */ });
+      // la CEO tape à son bureau tant qu'elle pilote une mission
+      const ceo = agentsPoses.find(p => idEquipe(p.agent) === 'jillian');
+      if (ceo && !taches.get(ceo.agent.id)) reglerTravail(ceo, missionsServeur.length > 0);
+      if (actuel && !onglet) dessinerMaintenant();
+    } catch { /* serveur ancien ou injoignable : la fenêtre l'indiquera à l'usage */ }
   }
+  if (!SANS_SERVEUR) { synchroniser(); setInterval(() => { if (!document.hidden) synchroniser(); }, 5000); }
 
   return { ouvrir, fermer, ouverte: () => !racine.hidden };
 }

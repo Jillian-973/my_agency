@@ -37,6 +37,9 @@ references/
 # ── Travaux produits par les agents (live/travaux/<Prénom>/) : restent sur cet ordinateur ──
 live/travaux/
 
+# ── Adresse et jeton du serveur en marche, lus par le MCP du QG : jamais dans le dépôt ──
+live/.qg-session.json
+
 # ── Fichiers temporaires ──
 *.tmp
 site/_*.html

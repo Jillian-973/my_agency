@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "qg": {
+      "command": "node",
+      "args": ["live/mcp-qg.js"]
+    }
+  }
+}
