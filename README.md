@@ -26,6 +26,8 @@ Pour parler aux agents, [Claude Code](https://claude.com/claude-code) doit être
 - **Parler aux agents** : clic sur un agent (son personnage, ou son nom dans la fiche de la salle), ou touche E devant lui pendant la visite. Sa fenêtre propose deux boutons :
   - **Discuter** : Claude Code répond sans aucun outil, avec la personnalité de l'agent (son prénom, son poste et ses missions lus dans `EQUIPE.md`). Rien n'est enregistré.
   - **Confier une tâche** : une vraie session Claude Code (modèle Sonnet) travaille dans `live/travaux/<Prénom>/`, avec seulement la lecture, l'écriture et la modification de fichiers et la recherche web. 2 $ maximum par tâche, 4 tâches en même temps au plus. Pendant ce temps l'agent tape à son bureau et la fenêtre montre seulement le nom de chaque outil utilisé et du fichier touché ; à la fin, son compte rendu, les fichiers créés et un bouton pour ouvrir son dossier.
+  - **Connecteurs** : d'après la ligne « Outils » de `EQUIPE.md`, certains agents utilisent aussi tes connecteurs claude.ai pendant leurs tâches (Gmail, Google Agenda, Notion, Google Drive pour Sheets, Slides et Docs, Gamma pour les présentations, Figma, Vercel, Cloudflare). Chacun n'a que les outils précis prévus pour son poste (`live/connecteurs.js`) ; tous les autres outils de tous les connecteurs lui sont cachés, et un garde-fou arrête la session au moindre appel interdit. Aucun mail n'est jamais envoyé.
+  - **Corbeille Gmail sur ton accord** : quand Léa trie la boîte, elle ne supprime rien ; elle propose une liste. La fenêtre l'affiche avec une case par mail, et seuls les mails que tu coches partent à la corbeille (récupérables 30 jours), par une seconde session qui n'a que cet outil.
   - **Sécurité** : le serveur n'écoute que sur `127.0.0.1` et refuse toute demande qui ne vient pas de la page du QG (adresse, origine et jeton secret recréé à chaque démarrage). Les travaux des agents restent sur cet ordinateur (`live/travaux/` n'est pas versionné).
 - **Interface** : panneaux, boutons et viseur dans le style sci-fi de Kenney ; titres en Kenney Future, tout le reste en Inter. Chaque fenêtre a sa forme (en-tête doré pour le panneau principal, en-tête à la couleur du pôle pour la fiche d'une salle, onglet en biseau pour un agent, verre aux coins coupés pour la minimap, onglet à encoche pour la pause), et la fiche, la fenêtre d'un agent et les boutons prennent la couleur de son pôle. Le bouton fermer et les curseurs de la souris viennent aussi du pack.
 
@@ -54,6 +56,7 @@ site/              le QG (servi tel quel)
   vendor/three/    three.js r160 (MIT)
   models/kenney/   modèles 3D Kenney (CC0)
 live/server.js     serveur local sans dépendance : le site et l'API des agents (Claude Code)
+live/connecteurs.js outils de connecteurs autorisés pour chaque agent, garde-fou, propositions de corbeille
 live/travaux/      dossiers de travail des agents (créés à la première tâche, non versionnés)
 maquettes/         les 7 maquettes successives (la 7 a été validée)
 BRIEF.md           le cahier des charges

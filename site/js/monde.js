@@ -339,7 +339,9 @@ export function construireMonde(scene) {
       const ped = grp(g, -.9, 0, .7); box(ped, .55, .9, .55, 0, 0, 0, '#ffffff');
       const knot = new THREE.Mesh(new THREE.TorusKnotGeometry(.22, .075, 80, 10), new THREE.MeshStandardMaterial({ color: P.studio.couleur, roughness: .25, metalness: .5 }));
       knot.position.y = 1.28; ped.add(knot); spin(knot, 'y', .5);
-      const mb = grp(g, 2.2, 0, .8, -Math.PI / 8); box(mb, 1.6, 1.15, .06, 0, .4, 0, '#ffffff');
+      // Inès (présentations et dossiers) au coin sud-est ; le mood board passe contre la verrière, à côté d'elle
+      poste(g, 2.45, .85, 0, 'slides', ag.ines, A(P.studio.couleur, 2, '#3b1f14', 'bun', { pants: '#4c1d95' }));
+      const mb = grp(g, 3.62, 0, 1.55, -Math.PI / 2); box(mb, 1.4, 1.15, .06, 0, .4, 0, '#ffffff');
       ['#f9a8d4', '#a78bfa', '#fde68a', '#5eead4', '#fb923c', '#38bdf8'].forEach((c, i) => box(mb, .4, .32, .02, -.5 + (i % 3) * .5, .55 + Math.floor(i / 3) * .44, .04, c, false));
       if (aModele('loungeDesignSofa')) poser(g, 'loungeDesignSofa', .3, 2.95, Math.PI, { w: 1.9, teinte: { carpetBlue: '#f9a8d4' } }); else sofa(g, .3, 2.95, Math.PI, '#f9a8d4', 1.8);
       plant(g, -3.5, 3.1, .9); tallPlant(g, 3.5, 3.1, .9); plant(g, 3.5, -.8, .75);
