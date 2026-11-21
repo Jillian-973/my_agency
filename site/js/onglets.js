@@ -100,7 +100,7 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
 
   /* ---------- Équipe : regroupée par pôle, le Quartier Général à la fin ---------- */
   const te = tiroirs.equipe, groupes = $('.groupes', te), resume = $('.resume', te), compte = $('.compte', barre);
-  let enCours = [], serveurOk = !SANS_SERVEUR, minuteur = 0, signature = '';
+  let enCours = [], missions = [], serveurOk = !SANS_SERVEUR, minuteur = 0, signature = '';
   const coches = new Set();                                   // agents cochés pour la réunion (gardés entre deux rafraîchissements)
   const ETAPES = { aller: 'En route vers la salle de réunion', reunion: 'En réunion', retour: 'Retourne à son bureau' };
   const idEquipe = (a) => a.idEquipe || a.id;
@@ -113,7 +113,7 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
   function dessinerEquipe(forcer = false) {
     if (ouvert !== 'equipe') return;
     // on ne redessine que si quelque chose a changé (sinon le clavier perdrait sa place toutes les 4 secondes)
-    const sig = JSON.stringify([serveurOk, enCours.map(t => [t.agent, t.derniere, Math.floor((Date.now() - t.debut) / 60000)]),
+    const sig = JSON.stringify([serveurOk, missions.map(m => [m.id, m.etat, m.faites]), enCours.map(t => [t.agent, t.derniere, Math.floor((Date.now() - t.debut) / 60000)]),
       agentsPoses.map(p => [reunion.etape(p), reunion.enPause(p)]), [...coches].map(p => p.agent.id)]);
     if (!forcer && sig === signature) return;
     signature = sig;
@@ -131,7 +131,12 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
       const h = document.createElement('h3'); h.style.setProperty('--c', f.couleur); h.textContent = f.nom;
       const ul = document.createElement('ul');
       for (const pose of membres) {
-        const a = pose.agent, t = parAgent.get(idEquipe(a));
+        const a = pose.agent;
+        // la CEO qui pilote une mission apparaît comme au travail, avec la mission
+        const pilote = idEquipe(a) === 'jillian' && missions.length && !parAgent.get('jillian')
+          ? { mode: 'mission', debut: Date.now(), resume: missions.length > 1 ? `${missions.length} missions` : missions[0].demande,
+            derniere: missions.length === 1 ? `${missions[0].faites}/${missions[0].total} missions terminées` : null } : null;
+        const t = parAgent.get(idEquipe(a)) || pilote;
         const li = document.createElement('li'); if (t) li.className = 'en-tache';
         const etape = reunion.etape(pose), dejaLa = !!etape && etape !== 'retour';
         if (dejaLa) li.classList.add('en-reunion');
@@ -149,9 +154,10 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
         const poste = document.createElement('span'); poste.textContent = a.poste;
         const maintenant = document.createElement('p');
         if (t) {
-          maintenant.textContent = t.mode === 'corbeille' ? `${t.resume}, ${duree(t.debut)}`
+          maintenant.textContent = t.mode === 'mission' ? `Pilote ${missions.length > 1 ? t.resume : `une mission : « ${t.resume}${t.resume.length >= 160 ? '…' : ''} »`}`
+            : t.mode === 'corbeille' ? `${t.resume}, ${duree(t.debut)}`
             : `Tâche en cours ${duree(t.debut)}${t.resume ? ` : « ${t.resume}${t.resume.length >= 160 ? '…' : ''} »` : ''}`;
-          if (t.derniere) { const d = document.createElement('small'); d.textContent = `Dernière action : ${t.derniere}`; maintenant.append(d); }
+          if (t.derniere) { const d = document.createElement('small'); d.textContent = `${t.mode === 'mission' ? 'Avancement' : 'Dernière action'} : ${t.derniere}`; maintenant.append(d); }
           if (etape) { const r = document.createElement('small'); r.textContent = ETAPES[etape]; maintenant.append(r); }
         } else if (etape) {
           maintenant.textContent = ETAPES[etape];
@@ -207,7 +213,7 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
   async function rafraichir() {
     clearTimeout(minuteur);
     if (SANS_SERVEUR) { dessinerEquipe(); return; }
-    try { enCours = (await appeler('/api/etat')).enCours || []; serveurOk = true; }
+    try { const etat = await appeler('/api/etat'); enCours = etat.enCours || []; missions = etat.missions || []; serveurOk = true; }
     catch { enCours = []; serveurOk = false; }
     compte.textContent = enCours.length; compte.hidden = !enCours.length;
     compte.title = `${enCours.length} tâche${enCours.length > 1 ? 's' : ''} en cours`;
