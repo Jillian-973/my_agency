@@ -55,7 +55,7 @@ export const AGENTS = [
   { id: 'blaise', prenom: 'Blaise', poste: 'Artiste 3D (à la demande)', pole: 'studio', etat: 'en attente',
     missions: ['Créer des scènes et rendus 3D pour des mockups ou des visuels', 'Automatiser les rendus répétitifs'], outils: ['Blender'] },
   { id: 'ines', prenom: 'Inès', poste: 'Conceptrice de présentations et de dossiers', pole: 'studio', etat: 'en attente',
-    missions: ['Préparer les présentations dans Google Slides', 'Rédiger les dossiers dans Google Docs (cahiers des charges, dossiers de conception)'], outils: ['Google Slides', 'Google Docs'] },
+    missions: ['Préparer les présentations avec Gamma ou dans Google Slides (export PowerPoint possible)', 'Rédiger les dossiers dans Google Docs (cahiers des charges, dossiers de conception)'], outils: ['Gamma', 'Google Slides', 'Google Docs'] },
   // Pôle Montage
   { id: 'milo', prenom: 'Milo', poste: 'Dérusheur', pole: 'montage', etat: 'au travail',
     missions: ['Transcrire et trier les rushes, repérer les meilleurs passages', 'Poser des marqueurs et un plan de montage'], outils: ['Librairie GitHub vidéo', 'Transcription'] },

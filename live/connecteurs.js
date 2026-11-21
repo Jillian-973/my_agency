@@ -1,4 +1,4 @@
-// Connecteurs des agents (claude.ai : Gmail, Google Agenda, Notion, Google Drive, Figma, Vercel, Cloudflare…).
+// Connecteurs des agents (claude.ai : Gmail, Google Agenda, Notion, Google Drive, Gamma, Figma, Vercel, Cloudflare…).
 //
 // Seuls certains agents s'en servent pendant leurs tâches, d'après la ligne « Outils » de EQUIPE.md.
 // Pour chacun : la liste précise des outils autorisés (--allowedTools) ; TOUS les autres outils de TOUS les
@@ -13,10 +13,10 @@ const { spawn } = require('node:child_process');
 
 // préfixes des outils, tels que les nomme Claude Code : « claude.ai Google Drive » → mcp__claude_ai_Google_Drive__…
 const GMAIL = 'claude_ai_Gmail', AGENDA = 'claude_ai_Google_Calendar', NOTION = 'claude_ai_Notion', DRIVE = 'claude_ai_Google_Drive',
-  FIGMA = 'claude_ai_Figma', VERCEL = 'claude_ai_Vercel', CLOUDFLARE = 'claude_ai_Cloudflare_Developer_Platform';
-const NOMS = { [GMAIL]: 'Gmail', [AGENDA]: 'Google Agenda', [NOTION]: 'Notion', [DRIVE]: 'Google Drive', [FIGMA]: 'Figma', [VERCEL]: 'Vercel', [CLOUDFLARE]: 'Cloudflare' };
+  GAMMA = 'claude_ai_Gamma', FIGMA = 'claude_ai_Figma', VERCEL = 'claude_ai_Vercel', CLOUDFLARE = 'claude_ai_Cloudflare_Developer_Platform';
+const NOMS = { [GMAIL]: 'Gmail', [AGENDA]: 'Google Agenda', [NOTION]: 'Notion', [DRIVE]: 'Google Drive', [GAMMA]: 'Gamma', [FIGMA]: 'Figma', [VERCEL]: 'Vercel', [CLOUDFLARE]: 'Cloudflare' };
 // mots de la ligne « Outils » de EQUIPE.md qui correspondent à chaque connecteur (pour vérifier la cohérence au démarrage)
-const MOTS = { [GMAIL]: /gmail/i, [AGENDA]: /agenda/i, [NOTION]: /notion/i, [DRIVE]: /google (sheets|slides|docs)/i, [FIGMA]: /figma/i, [VERCEL]: /vercel/i, [CLOUDFLARE]: /cloudflare/i };
+const MOTS = { [GMAIL]: /gmail/i, [AGENDA]: /agenda/i, [NOTION]: /notion/i, [DRIVE]: /google (sheets|slides|docs)/i, [GAMMA]: /gamma/i, [FIGMA]: /figma/i, [VERCEL]: /vercel/i, [CLOUDFLARE]: /cloudflare/i };
 
 /* ---------- jeux d'outils ---------- */
 const NOTION_LIRE = ['notion-search', 'notion-fetch'];
@@ -28,6 +28,11 @@ const AGENDA_LIRE = ['list_calendars', 'list_events', 'search_events', 'get_even
 const AGENDA_GERER = [...AGENDA_LIRE, 'suggest_time', 'create_event', 'update_event', 'delete_event', 'respond_to_event'];
 const DRIVE_LIRE = ['search_files', 'list_recent_files', 'get_file_metadata', 'read_file_content'];
 const DRIVE_CREER = [...DRIVE_LIRE, 'create_file'];
+// présenter : créer des diapositives (de zéro ou d'un modèle), les retoucher, les exporter en PowerPoint ou PDF.
+// Pas de déplacement de dossier (change le partage), pas de statistiques, pas d'avis envoyé à Gamma.
+const GAMMA_PRESENTER = ['get_gammas', 'search_gammas', 'read_gamma', 'get_gamma_outline', 'get_folders', 'get_themes', 'search_templates',
+  'generate', 'generate_from_template', 'get_generation_status', 'duplicate_gamma', 'edit_gamma', 'get_edit_status',
+  'generate_image', 'get_image_generation_status', 'export_gamma', 'get_export_status'];
 const FIGMA_LIRE = ['get_design_context', 'get_screenshot', 'get_metadata', 'get_variable_defs'];
 const VERCEL_LIRE = ['list_projects', 'get_project', 'list_deployments', 'get_deployment', 'list_deployment_events'];
 const VERCEL_SUIVRE = [...VERCEL_LIRE, 'get_runtime_logs', 'get_runtime_errors'];
@@ -46,7 +51,7 @@ const PAR_AGENT = {
   jade: { [FIGMA]: FIGMA_LIRE, [VERCEL]: VERCEL_LIRE },
   lila: { [FIGMA]: [...FIGMA_LIRE, 'search_design_system', 'get_libraries'] },
   zoe: { [VERCEL]: VERCEL_SUIVRE, [CLOUDFLARE]: CLOUDFLARE_LIRE },
-  ines: { [DRIVE]: [...DRIVE_CREER, 'copy_file'] },
+  ines: { [GAMMA]: GAMMA_PRESENTER, [DRIVE]: [...DRIVE_CREER, 'copy_file'] },
   // Basile lit librement ; il n'écrit que dans Notion (traces) et Drive (tableaux de suivi). Rien vers l'extérieur.
   basile: { [GMAIL]: GMAIL_LIRE, [AGENDA]: AGENDA_LIRE, [NOTION]: NOTION_ECRIRE, [VERCEL]: VERCEL_SUIVRE, [CLOUDFLARE]: CLOUDFLARE_LIRE, [DRIVE]: DRIVE_CREER },
 };
@@ -138,6 +143,9 @@ function controler(id, outil, entree, mode, idsCorbeille) {
   // mettre le libellé TRASH ou SPAM revient à supprimer : interdit sans accord
   const libelles = entree && (entree.labelIds || entree.addLabelIds);
   if (Array.isArray(libelles) && libelles.some(l => /^(TRASH|SPAM)$/i.test(String(l)))) return 'tentative de mise à la corbeille sans ton accord';
+  // Gamma : partager par mail ou ouvrir aux personnes extérieures, c'est envoyer vers l'extérieur
+  const partage = outil.startsWith(`mcp__${GAMMA}__`) && entree && entree.sharingOptions;
+  if (partage && (partage.emailOptions || (partage.externalAccess && partage.externalAccess !== 'noAccess'))) return 'tentative de partage d\'une présentation Gamma';
   return null;
 }
 
@@ -150,6 +158,11 @@ function consignes(id) {
     texte += ' Tu ne supprimes jamais de mail toi-même. Si des mails méritent d\'être supprimés, écris-les dans le fichier ' +
       'a-supprimer.json de ton dossier : un tableau JSON d\'objets {"threadId", "de", "objet", "date", "raison"} ' +
       '(threadId = identifiant du fil Gmail). Ta patronne ou ton patron les validera dans la page du QG avant toute suppression.';
+  }
+  if (PAR_AGENT[id] && PAR_AGENT[id][GAMMA]) {
+    texte += ' Pour une présentation, utilise Gamma. Ne remplis jamais sharingOptions : tu ne partages rien. ' +
+      'Ne retouche que les présentations créées pendant cette tâche ; pour reprendre une présentation existante, duplique-la d\'abord et travaille sur la copie. ' +
+      'Exporte en PowerPoint (pptx) si on te le demande, et note dans ton compte rendu le lien de la présentation et celui de l\'export.';
   }
   return texte;
 }

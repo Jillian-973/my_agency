@@ -60,8 +60,8 @@
   Missions : créer des scènes et rendus 3D pour des mockups ou des visuels, automatiser les rendus répétitifs
   Outils : Blender
 - Inès · conceptrice de présentations et de dossiers
-  Missions : préparer mes présentations dans Google Slides, rédiger mes dossiers dans Google Docs (cahiers des charges, dossiers de conception)
-  Outils : Google Slides, Google Docs
+  Missions : préparer mes présentations avec Gamma ou dans Google Slides (export PowerPoint possible), rédiger mes dossiers dans Google Docs (cahiers des charges, dossiers de conception)
+  Outils : Gamma, Google Slides, Google Docs
 
 ## Pôle Montage (couleur : rouge)
 - Milo · dérusheur
