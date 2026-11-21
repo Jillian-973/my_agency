@@ -33,16 +33,26 @@ export function creerReunion({ scene, zones, agentsPoses, sol, collisions, porte
     return etat[k] === 1;
   }
   const h = (i, j) => haut[i * NJ + j];
+  // Un mur se reconnaît à sa hauteur : seuls murs, cloisons, verrières (et grandes étagères) dépassent 1,85 m.
+  // Les bureaux, chaises et agents assis restent en dessous : on peut les enjamber pour se lever, pas un mur.
+  function traverseMur(a, b) {
+    const n = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / .05);
+    for (let s = 0; s <= n; s++) {
+      const x = a.x + (b.x - a.x) * s / n, z = a.z + (b.z - a.z) * s / n, pieds = sol(x, z);
+      if (pieds === null || collisions.bloque(x, z, .04, pieds + 1.55, true)) return true;
+    }
+    return false;
+  }
+  /** La case libre la plus proche d'un point (bureau, chaise), atteignable sans passer à travers un mur ni changer d'étage. */
   function caseLibreProche(x, z) {
-    const i0 = ci(x), j0 = cj(z);
-    let best = null, dmin = Infinity;
-    for (let r = 0; r <= 12 && !best; r++)
-      for (let i = i0 - r; i <= i0 + r; i++) for (let j = j0 - r; j <= j0 + r; j++) {
-        if (Math.max(Math.abs(i - i0), Math.abs(j - j0)) !== r || !libre(i, j)) continue;
-        const d = (cx(i) - x) ** 2 + (cz(j) - z) ** 2;
-        if (d < dmin) { dmin = d; best = [i, j]; }
-      }
-    return best;
+    const i0 = ci(x), j0 = cj(z), h0 = sol(x, z) ?? 0, candidats = [];
+    for (let i = i0 - 12; i <= i0 + 12; i++) for (let j = j0 - 12; j <= j0 + 12; j++) candidats.push([i, j, (cx(i) - x) ** 2 + (cz(j) - z) ** 2]);
+    candidats.sort((p, q) => p[2] - q[2]);
+    for (const [i, j] of candidats) {
+      if (!libre(i, j) || Math.abs(h(i, j) - h0) > MARCHE) continue;
+      if (!traverseMur({ x, z }, { x: cx(i), z: cz(j) })) return [i, j];
+    }
+    return null;
   }
 
   /* ---------- A* sur la grille (8 directions, pas de coin coupé, pas de marche trop haute) ---------- */
@@ -96,12 +106,13 @@ export function creerReunion({ scene, zones, agentsPoses, sol, collisions, porte
     }
     return out;
   }
-  /** Chemin de (a) à (b), points du monde ; les extrémités (chaise, bureau) peuvent être dans un meuble. */
+  /** Chemin de (a) à (b), points du monde ; les extrémités (chaise, bureau) peuvent être dans un meuble.
+   *  null s'il n'y en a pas : l'agent ne part pas plutôt que de traverser un mur. */
   function itineraire(a, b) {
     const ca = caseLibreProche(a.x, a.z), cb = caseLibreProche(b.x, b.z);
-    if (!ca || !cb) return [a, b];
+    if (!ca || !cb) return null;
     const pts = astar(ca, cb);
-    if (!pts) return [a, b];
+    if (!pts) return null;
     return [a, ...lisser(pts), b];
   }
 
@@ -150,9 +161,9 @@ export function creerReunion({ scene, zones, agentsPoses, sol, collisions, porte
 
   /* ---------- aller, rester, revenir ---------- */
   const enMarche = new Set();
-  function partir(pose, depart, arrivee, quandArrive) {
-    const m = pose.reunion;
-    m.chemin = itineraire(depart, arrivee);
+  function partir(pose, chemin, quandArrive) {
+    const m = pose.reunion, depart = chemin[0];
+    m.chemin = chemin;
     m.longueurs = [0];
     for (let i = 1; i < m.chemin.length; i++) m.longueurs.push(m.longueurs[i - 1] + Math.hypot(m.chemin[i].x - m.chemin[i - 1].x, m.chemin[i].z - m.chemin[i - 1].z));
     m.d = 0; m.attente = Math.random() * .6; m.quandArrive = quandArrive;
@@ -164,23 +175,24 @@ export function creerReunion({ scene, zones, agentsPoses, sol, collisions, porte
     let n = 0;
     for (const pose of liste) {
       if (pose.reunion && pose.reunion.etape !== 'retour') continue;
+      pose.groupe.updateMatrixWorld(true);
+      pose.groupe.matrixWorld.decompose(pos, quat, ech);
+      const ici = pose.reunion ? { x: pose.reunion.corps.position.x, z: pose.reunion.corps.position.z } : { x: pos.x, z: pos.z };
+      const place = placeLibrePres(ici.x, ici.z), chemin = place && itineraire(ici, place);
+      if (!chemin) { console.warn(`Réunion : aucun chemin pour ${pose.agent.prenom}, il reste où il est.`); continue; }
       if (!pose.reunion) {
         // l'agent se lève : son corps assis disparaît, sa chaise vide reste au bureau
-        pose.groupe.updateMatrixWorld(true);
-        pose.groupe.matrixWorld.decompose(pos, quat, ech);
         const vide = new THREE.Group(); vide.position.copy(pos); vide.quaternion.copy(quat);
         if (pose.groupe.userData.look.siege !== false) chair(vide, 0, -.02, 0, pose.groupe.userData.look.chair);
         scene.add(vide);
         pose.reunion = { bureau: { x: pos.x, z: pos.z, r: pose.groupe.rotation.y }, chaiseVide: vide, corps: null };
         pose.groupe.visible = false;
       }
-      const m = pose.reunion, ici = m.corps ? { x: m.corps.position.x, z: m.corps.position.z } : m.bureau;
+      const m = pose.reunion;
       if (m.place) m.place.prise = null;
-      m.place = placeLibrePres(ici.x, ici.z);
-      if (!m.place) continue;                           // plus aucune place (ne devrait pas arriver)
-      m.place.prise = pose; m.etape = 'aller';
+      m.place = place; m.place.prise = pose; m.etape = 'aller'; m.aller = chemin;
       pose.enReunion = true; majEtiquette(pose);
-      partir(pose, ici, m.place, () => {
+      partir(pose, chemin, () => {
         m.etape = 'reunion';
         if (m.place.assise) changerCorps(pose, corpsAssis(pose, m.place));
         else m.corps.rotation.y = m.place.r;
@@ -195,10 +207,12 @@ export function creerReunion({ scene, zones, agentsPoses, sol, collisions, porte
     for (const pose of agentsPoses) {
       const m = pose.reunion;
       if (!m || m.etape === 'retour') continue;
-      const ici = { x: m.corps.position.x, z: m.corps.position.z };
+      const ici = { x: m.corps.position.x, z: m.corps.position.z }, assis = m.etape === 'reunion';
       if (m.place) { m.place.prise = null; m.place = null; }
       m.etape = 'retour';
-      partir(pose, ici, m.bureau, () => {
+      // le chemin du retour ; à défaut, celui de l'aller à l'envers (l'agent est bien venu par là)
+      const chemin = itineraire(ici, m.bureau) || (assis ? [...m.aller].reverse() : [ici, ...[...m.aller].reverse()]);
+      partir(pose, chemin, () => {
         // de retour : l'agent se rassoit à son bureau, comme avant
         scene.remove(m.corps); scene.remove(m.chaiseVide);
         pose.groupe.visible = true; pose.groupe.add(pose.etiquette.sprite);
@@ -251,5 +265,5 @@ export function creerReunion({ scene, zones, agentsPoses, sol, collisions, porte
 
   const etape = (pose) => (pose.reunion ? pose.reunion.etape : null);
   const presents = () => agentsPoses.filter(p => p.reunion && p.reunion.etape !== 'retour').length;
-  return { inviter, terminer, mettreAJour, etape, presents, places: places.length, itineraire };
+  return { inviter, terminer, mettreAJour, etape, presents, places: places.length, itineraire, traverseMur };
 }

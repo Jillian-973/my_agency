@@ -492,7 +492,7 @@ fpsEl.title = 'Carte graphique utilisée : ' + GPU;
 if (LOGICIEL) { renderer.shadowMap.enabled = false; pr = PR_MIN; renderer.setPixelRatio(pr); }
 
 // accès pratique depuis la console du navigateur (débogage)
-window.qg = { scene, camera, controls, zones, agents: agentsPoses, portes, allerVers, vueEnsemble, entrerDans, vueDuHaut, visite, onglets, reunion };
+window.qg = { scene, camera, controls, zones, agents: agentsPoses, portes, allerVers, vueEnsemble, entrerDans, vueDuHaut, visite, onglets, reunion, collisions, sol: hauteurSol };
 
 /* ================= Boucle ================= */
 const clock = new THREE.Clock();
