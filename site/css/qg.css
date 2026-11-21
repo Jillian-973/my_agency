@@ -1,0 +1,67 @@
+:root {
+  --encre: #1f2937;
+  --doux: #4b5563;
+  --verre: rgba(255, 255, 255, .9);
+  --ombre: 0 6px 24px rgba(30, 60, 90, .18);
+  --or: #b8860b;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--encre); }
+body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
+#c { position: fixed; inset: 0; display: block; touch-action: none; }
+
+/* chargement */
+#chargement { position: fixed; inset: 0; display: grid; place-content: center; gap: 12px; text-align: center;
+  background: linear-gradient(#6fbcf2, #eef8ff); z-index: 20; transition: opacity .6s; }
+#chargement p { margin: 0; font-weight: 700; font-size: 18px; }
+#chargement .barre { width: 240px; height: 8px; border-radius: 99px; background: rgba(255, 255, 255, .7); overflow: hidden; }
+#chargement .barre i { display: block; height: 100%; width: 0; background: var(--or); transition: width .2s; }
+#chargement.fini { opacity: 0; pointer-events: none; }
+
+/* panneau principal */
+.panneau { position: fixed; top: 16px; left: 16px; width: 260px; max-width: calc(100vw - 32px); background: var(--verre);
+  backdrop-filter: blur(6px); border-radius: 14px; padding: 12px 14px; box-shadow: var(--ombre); }
+.panneau h1 { font-size: 15px; margin: 0 0 2px; letter-spacing: .02em; }
+.panneau p { font-size: 12px; margin: 0 0 10px; color: var(--doux); }
+#legende { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 6px; }
+#legende button { display: flex; align-items: center; gap: 6px; border: 0; background: transparent; padding: 4px 6px;
+  border-radius: 8px; font: inherit; font-size: 12px; color: var(--encre); cursor: pointer; text-align: left; }
+#legende button:hover, #legende button:focus-visible { background: rgba(15, 23, 42, .07); outline: none; }
+#legende button.qg { grid-column: 1 / -1; font-weight: 600; }
+#legende i { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+.actions { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; gap: 8px; }
+.actions button { border: 0; background: var(--encre); color: #fff; font: inherit; font-size: 12px; font-weight: 600;
+  padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+.actions a { font-size: 12px; color: var(--doux); }
+
+/* fiche de la salle visitée */
+#fiche { position: fixed; left: 16px; bottom: 54px; width: 300px; max-width: calc(100vw - 32px); max-height: 46vh; overflow: auto;
+  background: var(--verre); backdrop-filter: blur(6px); border-radius: 14px; padding: 12px 14px; box-shadow: var(--ombre); }
+#fiche .titre { --c: #64748b; font-size: 15px; margin: 0 26px 2px 0; padding-left: 10px; border-left: 4px solid var(--c); }
+#fiche .pole { font-size: 12px; color: var(--doux); margin: 0 0 8px 14px; }
+#fiche .pole:empty { display: none; }
+#fiche ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+#fiche li { display: grid; grid-template-columns: 10px auto 1fr; grid-template-rows: auto auto; column-gap: 8px; font-size: 13px; }
+#fiche li i { width: 10px; height: 10px; border-radius: 50%; grid-row: 1; align-self: center; }
+#fiche li b { grid-row: 1; }
+#fiche li span { grid-row: 2; grid-column: 2 / -1; color: var(--doux); font-size: 12px; }
+#fiche li em { grid-row: 1; grid-column: 3; justify-self: end; font-style: normal; font-size: 12px; color: var(--doux); }
+#fiche .vide { font-size: 12px; color: var(--doux); margin: 0; }
+#fiche .fermer { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border: 0; border-radius: 8px;
+  background: rgba(15, 23, 42, .07); font-size: 18px; line-height: 1; cursor: pointer; color: var(--encre); }
+
+/* infobulle de survol */
+#survol { --c: #64748b; position: fixed; pointer-events: none; background: #fff; border: 2px solid var(--c); border-radius: 999px;
+  padding: 3px 10px; font-size: 12px; font-weight: 700; box-shadow: var(--ombre); white-space: nowrap; z-index: 5; }
+
+.aide { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #334155;
+  background: rgba(255, 255, 255, .8); padding: 6px 12px; border-radius: 999px; white-space: nowrap;
+  max-width: calc(100vw - 200px); overflow: hidden; text-overflow: ellipsis; }
+#fps { position: fixed; bottom: 14px; right: 16px; font: 11px ui-monospace, monospace; color: #334155; background: rgba(255, 255, 255, .6);
+  padding: 3px 7px; border-radius: 6px; }
+
+@media (max-width: 640px) {
+  .aide { display: none; }
+  .panneau { width: auto; right: 16px; }
+  #fiche { bottom: 40px; }
+}

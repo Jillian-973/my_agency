@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JILL KORP · Le QG</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/qg.css">
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three/three.module.js",
+  "three/addons/": "./vendor/three/addons/"
+} }
+</script>
+</head>
+<body>
+<canvas id="c" aria-label="Le QG de JILL KORP en 3D"></canvas>
+
+<div id="chargement">
+  <p>Ouverture du QG…</p>
+  <div class="barre"><i></i></div>
+</div>
+
+<aside class="panneau">
+  <h1>JILL KORP · le QG</h1>
+  <p>Clique sur un pôle (ou sur une salle) pour y voler.</p>
+  <nav id="legende" aria-label="Aller vers un pôle"></nav>
+  <div class="actions">
+    <button id="ensemble" type="button">Vue d'ensemble</button>
+    <a href="mentions.html">Mentions</a>
+  </div>
+</aside>
+
+<section id="fiche" hidden aria-live="polite">
+  <button class="fermer" type="button" aria-label="Fermer et revenir à la vue d'ensemble">×</button>
+  <h2 class="titre"></h2>
+  <p class="pole"></p>
+  <ul></ul>
+  <p class="vide">Personne ne travaille ici en ce moment.</p>
+</section>
+
+<div id="survol" hidden></div>
+<div class="aide">Clic gauche : tourner · molette ou pincer : zoom · clic droit, ZQSD ou flèches : se déplacer · Échap : vue d'ensemble</div>
+<div id="fps"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
