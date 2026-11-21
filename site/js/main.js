@@ -362,11 +362,11 @@ canvas.addEventListener('dblclick', (e) => {
   if (z) entrerDans(z);
 });
 canvas.addEventListener('pointermove', (e) => {
-  if (visite.actif()) { survol.hidden = true; canvas.style.cursor = ''; return; }
+  if (visite.actif()) { survol.hidden = true; canvas.classList.remove('clic'); return; }
   if (e.buttons) { survol.hidden = true; return; }
   const pose = agentSous(ndcDe(e.clientX, e.clientY));
   const z = pose ? null : zoneSous(e.clientX, e.clientY);
-  canvas.style.cursor = pose || z ? 'pointer' : '';
+  canvas.classList.toggle('clic', !!(pose || z));          // curseur « clic » du pack sur un agent ou une salle
   if (!pose && !z) { survol.hidden = true; return; }
   if (pose) {
     const a = pose.agent;
