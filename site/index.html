@@ -23,6 +23,13 @@
   <div class="barre"><i></i></div>
 </div>
 
+<!-- bandeau du haut : logos des connecteurs qui marchent ; un logo s'allume quand un agent s'en sert -->
+<nav id="bandeau" aria-label="Connecteurs branchés" hidden>
+  <button class="prec" type="button" aria-label="Faire défiler vers la gauche" title="Précédents">‹</button>
+  <ul class="piste"></ul>
+  <button class="suiv" type="button" aria-label="Faire défiler vers la droite" title="Suivants">›</button>
+</nav>
+
 <aside class="panneau sf-cadre cadre-entete" data-pole="qg">
   <h1 class="sf-entete">JILL KORP · le QG</h1>
   <p class="consigne-haut">Clique sur un pôle pour y voler, double-clique pour y entrer.</p>
@@ -127,6 +134,7 @@
 <nav id="onglets" aria-label="Onglets du QG">
   <button type="button" data-tiroir="poles" aria-expanded="false" aria-controls="tiroir-poles">Pôles</button>
   <button type="button" data-tiroir="equipe" aria-expanded="false" aria-controls="tiroir-equipe">Équipe<span class="compte" hidden></span></button>
+  <button type="button" data-tiroir="outils" aria-expanded="false" aria-controls="tiroir-outils">Outils<span class="alerte" hidden></span></button>
 </nav>
 <section id="tiroir-poles" class="tiroir sf-cadre cadre-entete" data-pole="qg" hidden aria-label="Pôles et lieux, un par un">
   <h2 class="sf-entete">Pôles et lieux</h2>
@@ -152,6 +160,17 @@
       <span>Siffler la réunion</span>
     </button>
   </div>
+</section>
+
+<section id="tiroir-outils" class="tiroir sf-cadre cadre-entete" data-pole="qg" hidden aria-label="Mes connecteurs et leur état">
+  <h2 class="sf-entete">Outils · connecteurs</h2>
+  <button class="fermer sf-fermer" type="button" aria-label="Fermer l'onglet Outils" title="Fermer">×</button>
+  <div class="tete">
+    <p class="resume" aria-live="polite"></p>
+    <button class="verifier sf-bouton gris" type="button">Vérifier</button>
+  </div>
+  <div class="defile"><div class="groupes"></div></div>
+  <p class="note">Seuls le nom et l'état de chaque connecteur sont affichés. « À connecter » : il attend que tu t'y identifies dans Claude.</p>
 </section>
 
 <div id="survol" class="sf-bulle" hidden></div>

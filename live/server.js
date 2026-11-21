@@ -35,6 +35,7 @@ const DUREE_MAX_TACHE = 30 * 60e3; // une tâche est arrêtée au bout de 30 min
 const OUTILS_TACHE = ['Read', 'Write', 'Edit', 'WebSearch', 'WebFetch'];
 const BUDGET_CORBEILLE = 0.5;      // dollars pour mettre à la corbeille les mails que tu as validés
 const CNX = require('./connecteurs.js');
+const OUTILS = require('./outils-mcp.js');
 
 // Jeton secret, recréé à chaque démarrage : il est glissé dans la page du QG et exigé par l'API.
 // Une page d'un autre site ne peut pas le lire (même origine obligatoire), donc ne peut pas appeler l'API.
@@ -228,11 +229,14 @@ function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null } = 
             t.derniere = fichier ? `${outil} · ${fichier}` : outil;
             // garde-fou : un appel interdit (envoi, corbeille sans accord, mail hors liste…) arrête aussitôt la session
             if (String(c.name).startsWith('mcp__')) {
+              OUTILS.debutUsage(c.id, String(c.name).split('__')[1] || '', agent.prenom, t.id);   // son logo s'allume dans le bandeau
               const alerte = CNX.controler(agent.id, c.name, c.input, mode, idsCorbeille);
               if (alerte) { try { enfant.kill(); } catch { /* déjà arrêtée */ } return terminer({ erreur: `Session arrêtée par le garde-fou : ${alerte}.`, fichiers: nouveaux() }); }
               if (mode === 'corbeille') t.corbeille.push(String(c.input.threadId));
             }
           }
+        } else if (j.type === 'user' && j.message && Array.isArray(j.message.content)) {
+          for (const c of j.message.content) if (c.type === 'tool_result') OUTILS.finUsage(c.tool_use_id);
         } else if (j.type === 'result') resultat = j;
       }
     });
@@ -260,6 +264,7 @@ function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null } = 
   function terminer(fin) {
     if (t.etat !== 'en cours') return;
     t.etat = 'terminee'; t.fin = Date.now(); delete t.enfant;
+    OUTILS.finTache(t.id);
     // mails que l'agent propose de mettre à la corbeille (a-supprimer.json) : tu les valides dans la page
     t.propositions = mode === 'tache' && CNX.PROPOSE_CORBEILLE.has(agent.id) ? CNX.lirePropositions(dossier, t.debut) : [];
     diffuser(t, {
@@ -314,7 +319,14 @@ async function api(req, res, url) {
 
   if (req.method === 'GET' && p === '/api/etat') {
     const connecteurs = Object.fromEntries(Object.keys(EQUIPE).filter(CNX.aDesConnecteurs).map(id => [id, CNX.connecteursDe(id)]));
-    return json(res, 200, { claude: !!CLAUDE, enCours: enCours().map(t => ({ id: t.id, agent: t.agent, mode: t.mode, debut: t.debut, resume: t.resume, derniere: t.derniere })), max: TACHES_MAX, connecteurs });
+    return json(res, 200, { claude: !!CLAUDE, enCours: enCours().map(t => ({ id: t.id, agent: t.agent, mode: t.mode, debut: t.debut, resume: t.resume, derniere: t.derniere })), max: TACHES_MAX, connecteurs, actifs: OUTILS.usagesActifs() });
+  }
+
+  // onglet « Outils » : nom et état de chaque connecteur (claude mcp list), jamais d'adresse, de commande ni d'erreur
+  if (req.method === 'GET' && p === '/api/outils') {
+    if (!CLAUDE) return json(res, 503, { erreur: 'Claude Code est introuvable sur cet ordinateur.' });
+    const r = await OUTILS.lireConnecteurs(CLAUDE, RACINE, url.searchParams.get('verifier') === '1');
+    return json(res, 200, { date: r.date, connecteurs: r.liste, echec: !!r.erreur });
   }
 
   if (req.method === 'POST' && (p === '/api/discuter' || p === '/api/taches')) {

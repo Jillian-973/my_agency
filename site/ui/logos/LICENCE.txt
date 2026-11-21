@@ -1,0 +1,14 @@
+Logos des connecteurs du QG
+
+1. Logos repris de Simple Icons (https://simpleicons.org), paquet npm « simple-icons » version 16.38.0,
+   placés par leurs auteurs sous licence CC0 1.0 (domaine public) :
+   atlassian, claude, cloudflare, expensify, figma, gmail, googlecalendar, googledrive, gusto, intercom,
+   linear, mailchimp, myob, notion, paypal, quickbooks, shopify, square, stripe, tiktok, trello, vercel,
+   wix, zapier, zoho.
+   Seule la couleur a été ajoutée (couleur de chaque marque, d'après les données de Simple Icons).
+
+2. Logos dessinés pour le QG (une forme simple et une initiale), pour les marques absentes de Simple Icons :
+   adobe, airwallex, apollo, canva, clay, emergent, gamma, monday, ramp, ringex, slack.
+
+Les marques et logos restent la propriété de leurs détenteurs. Ils ne servent ici qu'à reconnaître
+chaque connecteur dans le bandeau du QG.

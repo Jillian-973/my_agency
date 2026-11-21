@@ -163,6 +163,34 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 #survol { border-color: var(--c, rgba(170, 195, 231, .55)); }
 .aide { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 12px; padding: 6px 14px;
   white-space: nowrap; max-width: calc(100vw - 220px); overflow: hidden; text-overflow: ellipsis; }
+/* ---------- bandeau du haut : logos des connecteurs ----------
+   Entre le panneau (à gauche) et le bord droit ; il défile avec les flèches, la molette ou en glissant. */
+#bandeau { position: fixed; top: 14px; left: 306px; right: 14px; z-index: 3; display: flex; align-items: center; gap: 4px; padding: 0 4px;
+  background: var(--sombre); border: 1px solid rgba(170, 195, 231, .4); border-radius: 14px; box-shadow: 0 4px 14px rgba(0, 0, 0, .22); }
+body.en-visite #bandeau { right: 280px; }
+#bandeau > button { flex: none; width: 26px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: rgba(231, 242, 250, .85);
+  font: 700 20px/1 var(--texte); cursor: var(--curseur-clic); display: none; }
+#bandeau.deborde > button { display: block; }
+#bandeau > button:hover:not(:disabled), #bandeau > button:focus-visible { background: rgba(255, 255, 255, .12); color: #fff; outline: none; }
+#bandeau > button:disabled { opacity: .25; cursor: var(--curseur); }
+#bandeau .piste { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; margin: 0; padding: 9px 10px; list-style: none;
+  overflow-x: auto; scrollbar-width: none; scroll-behavior: auto; cursor: grab; -webkit-mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent); }
+#bandeau .piste::-webkit-scrollbar { display: none; }
+#bandeau .piste.glisse { cursor: grabbing; }
+#bandeau li { flex: none; display: flex; align-items: center; gap: 0; height: 36px; padding: 0; border-radius: 10px; transition: gap .25s, padding .25s, background .25s, box-shadow .25s; }
+#bandeau .pastille { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08); transition: transform .25s, box-shadow .25s; }
+#bandeau li.sombre .pastille { background: #1f2937; }
+#bandeau .pastille img, #bandeau .pastille svg { width: 22px; height: 22px; pointer-events: none; }
+#bandeau .legende { max-width: 0; overflow: hidden; white-space: nowrap; font: 600 12px/1 var(--texte); color: #fff; transition: max-width .3s; }
+/* surbrillance : halo à la couleur de la marque, la tuile s'élargit et affiche qui s'en sert */
+#bandeau li.actif { gap: 8px; padding-right: 12px; background: color-mix(in srgb, var(--halo) 35%, transparent);
+  box-shadow: 0 0 0 2px var(--halo), 0 0 8px 1px color-mix(in srgb, var(--halo) 70%, transparent); animation: allume 1.6s ease-in-out infinite; }
+#bandeau li.actif .pastille { transform: scale(1.06); box-shadow: 0 0 0 2px #fff; }
+#bandeau li.actif .legende { max-width: 220px; }
+@keyframes allume { 50% { box-shadow: 0 0 0 2px var(--halo), 0 0 9px 4px color-mix(in srgb, var(--halo) 85%, transparent); } }
+@media (prefers-reduced-motion: reduce) { #bandeau li.actif { animation: none; } }
+
 /* ---------- onglets du bas : « Pôles » et « Équipe » ----------
    Deux petits onglets discrets ; chacun ouvre un tiroir juste au-dessus. */
 #onglets { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; padding: 3px; z-index: 4;
@@ -231,8 +259,29 @@ body.en-visite #onglets, body.en-visite .tiroir { display: none; }
 #tiroir-equipe .sifflet:not(:disabled):hover svg { animation: siffle .35s ease-in-out 2; }
 @keyframes siffle { 50% { transform: rotate(-12deg) scale(1.1); } }
 
+/* Outils : connecteurs regroupés, deux colonnes de pastilles */
+#onglets .alerte { min-width: 17px; height: 17px; padding: 0 5px; border-radius: 999px; display: inline-grid; place-items: center; font-size: 10.5px; background: #ef4444; color: #fff; }
+#tiroir-outils { width: min(620px, calc(100vw - 28px)); max-height: min(62vh, calc(100vh - 140px)); display: flex; flex-direction: column; }
+#tiroir-outils .tete { display: flex; align-items: center; gap: 10px; margin: 0 2px 8px; }
+#tiroir-outils .resume { flex: 1; margin: 0; font-size: 12px; color: var(--doux); }
+#tiroir-outils .verifier { flex: none; padding-left: 14px; padding-right: 14px; }
+#tiroir-outils .verifier:disabled { opacity: .6; cursor: var(--curseur); transform: none; }
+#tiroir-outils .defile { overflow: auto; min-height: 0; flex: 1; margin: 0 -6px; padding: 0 6px 2px; }
+#tiroir-outils h3 { margin: 10px 2px 5px; font: 600 11px/1 var(--texte); letter-spacing: .06em; text-transform: uppercase; color: var(--doux); }
+#tiroir-outils section:first-child h3 { margin-top: 2px; }
+#tiroir-outils ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px; }
+#tiroir-outils li { display: grid; grid-template-columns: 9px 1fr auto; align-items: center; gap: 7px; padding: 6px 9px; border-radius: 6px;
+  border: 1px solid rgba(43, 47, 69, .1); background: rgba(255, 255, 255, .55); font-size: 12px; }
+#tiroir-outils li i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255, 255, 255, .85); }
+#tiroir-outils li b { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#tiroir-outils li span { font-size: 11px; color: var(--doux); white-space: nowrap; }
+#tiroir-outils li.etat-ok { border-color: rgba(34, 197, 94, .4); background: rgba(240, 253, 244, .8); }
+#tiroir-outils li.etat-en-panne { border-color: rgba(239, 68, 68, .45); background: rgba(254, 242, 242, .85); }
+#tiroir-outils li.etat-en-panne span { color: #b91c1c; font-weight: 600; }
+#tiroir-outils .note { margin: 8px 2px 0; font-size: 11px; color: var(--doux); }
+
 /* tiroir ouvert : la fiche de la salle monte au-dessus de « Pôles », et s'efface derrière « Équipe » */
-body[data-tiroir="equipe"] #fiche { display: none; }
+body[data-tiroir="equipe"] #fiche, body[data-tiroir="outils"] #fiche { display: none; }
 @media (max-width: 1260px) { body[data-tiroir="poles"] #fiche { bottom: 192px; max-height: calc(100vh - 400px); } }
 
 #fps { position: fixed; bottom: 12px; right: 14px; font-family: var(--texte); font-size: 11px; font-variant-numeric: tabular-nums; padding: 4px 9px; border-radius: 6px; }
@@ -342,6 +391,8 @@ body.en-visite .consigne-visite { display: block; }
 @media (max-width: 640px) {
   .aide, .aide-visite { display: none; }
   .panneau { width: auto; right: 14px; }
+  #bandeau { left: 14px; right: 14px; }
+  body:has(#bandeau:not([hidden])) .panneau { top: 78px; }
   #fiche { bottom: 52px; }
   #fps { bottom: 50px; }
   body[data-tiroir] #fps { display: none; }
