@@ -163,6 +163,64 @@ body { background: linear-gradient(#6fbcf2 0%, #b8e2ff 55%, #eef8ff 100%); }
 #survol { border-color: var(--c, rgba(170, 195, 231, .55)); }
 .aide { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 12px; padding: 6px 14px;
   white-space: nowrap; max-width: calc(100vw - 220px); overflow: hidden; text-overflow: ellipsis; }
+/* ---------- onglets du bas : « Pôles » et « Équipe » ----------
+   Deux petits onglets discrets ; chacun ouvre un tiroir juste au-dessus. */
+#onglets { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; padding: 3px; z-index: 4;
+  background: var(--sombre); border: 1px solid rgba(170, 195, 231, .4); border-radius: 999px; box-shadow: 0 4px 14px rgba(0, 0, 0, .22); }
+#onglets button { display: flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; background: transparent; padding: 5px 14px;
+  font: 600 12px/1 var(--texte); letter-spacing: .02em; color: rgba(231, 242, 250, .78); cursor: var(--curseur-clic); transition: background .15s, color .15s; }
+#onglets button:hover, #onglets button:focus-visible { color: #fff; background: rgba(255, 255, 255, .1); outline: none; }
+#onglets button[aria-expanded="true"] { color: #2b2100; background: #ffc83d; }
+#onglets .compte { min-width: 17px; height: 17px; padding: 0 5px; border-radius: 999px; display: inline-grid; place-items: center;
+  font-size: 10.5px; background: #22c55e; color: #fff; }
+.aide { bottom: 50px; }
+body[data-tiroir] .aide { display: none; }
+body.en-visite #onglets, body.en-visite .tiroir { display: none; }
+
+.tiroir { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); z-index: 4; width: min(560px, calc(100vw - 28px)); }
+.tiroir .fermer { position: absolute; top: 4px; right: 9px; }
+.tiroir .sf-entete { --entete-max: calc(100% - 52px); font-size: 12px; }
+/* Pôles : précédent / suivant, puis un point par lieu */
+#tiroir-poles .pas { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; }
+#tiroir-poles .pas .sf-bouton { min-width: 40px; padding: 4px 0; font-size: 18px; line-height: 1; }
+#tiroir-poles .infos { margin: 0; display: grid; gap: 1px; text-align: center; font-size: 12px; color: var(--doux); }
+#tiroir-poles .infos b { font-size: 13.5px; color: var(--encre); }
+#tiroir-poles .infos small { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--doux); }
+#tiroir-poles .points { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; margin-top: 10px; }
+#tiroir-poles .points button { width: 12px; height: 12px; padding: 0; border: 0; border-radius: 3px; background: var(--c);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .2), 0 0 0 2px rgba(255, 255, 255, .8); opacity: .55; cursor: var(--curseur-clic); transition: transform .12s, opacity .12s; }
+#tiroir-poles .points button:hover, #tiroir-poles .points button:focus-visible { opacity: 1; outline: none; transform: scale(1.15); }
+#tiroir-poles .points button[aria-current="true"] { opacity: 1; transform: scale(1.3); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .2), 0 0 0 2px #fff, 0 0 0 4px var(--pole); }
+#tiroir-poles .points .sep { width: 1px; height: 14px; margin: 0 4px; background: rgba(43, 47, 69, .25); }
+/* Équipe : agents regroupés par pôle */
+#tiroir-equipe { width: min(620px, calc(100vw - 28px)); max-height: min(62vh, calc(100vh - 140px)); display: flex; flex-direction: column; }
+#tiroir-equipe .resume { margin: 0 2px 8px; font-size: 12px; color: var(--doux); }
+#tiroir-equipe .defile { overflow: auto; min-height: 0; flex: 1; margin: 0 -6px; padding: 0 6px 2px; }
+#tiroir-equipe h3 { display: flex; align-items: center; gap: 7px; margin: 10px 2px 4px; font: 600 11px/1 var(--texte); letter-spacing: .06em; text-transform: uppercase; color: var(--doux); }
+#tiroir-equipe h3::before { content: ""; width: 10px; height: 10px; border-radius: 2px; background: var(--c); box-shadow: 0 0 0 2px rgba(255, 255, 255, .8); }
+#tiroir-equipe section:first-child h3 { margin-top: 2px; }
+#tiroir-equipe ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+#tiroir-equipe li { display: flex; align-items: stretch; gap: 4px; }
+#tiroir-equipe li > button:first-child { flex: 1; min-width: 0; display: grid; grid-template-columns: 10px auto 1fr; align-items: center; column-gap: 8px; row-gap: 2px;
+  padding: 6px 9px; text-align: left; border: 1px solid rgba(43, 47, 69, .1); border-radius: 6px; background: rgba(255, 255, 255, .55);
+  font: 12px/1.35 var(--texte); color: var(--encre); cursor: var(--curseur-clic); }
+#tiroir-equipe li > button:first-child:hover, #tiroir-equipe li > button:first-child:focus-visible { background: rgba(255, 255, 255, .92); border-color: rgba(28, 155, 224, .5); outline: none; }
+#tiroir-equipe li i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255, 255, 255, .85); }
+#tiroir-equipe li b { font-weight: 600; }
+#tiroir-equipe li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--doux); font-size: 11.5px; }
+#tiroir-equipe li p { grid-column: 2 / -1; margin: 0; color: var(--doux); font-size: 11.5px; }
+#tiroir-equipe li p small { display: block; font-size: 11px; color: var(--doux); opacity: .85; }
+#tiroir-equipe li.en-tache > button:first-child { border-color: rgba(34, 197, 94, .55); background: rgba(240, 253, 244, .85); }
+#tiroir-equipe li.en-tache p { color: #166534; font-weight: 500; }
+#tiroir-equipe li.en-tache i { animation: pouls 1.4s ease-in-out infinite; }
+@keyframes pouls { 50% { box-shadow: 0 0 0 2px rgba(255, 255, 255, .85), 0 0 0 5px rgba(34, 197, 94, .35); } }
+#tiroir-equipe .voir { flex: none; padding: 0 10px; border: 1px solid rgba(43, 47, 69, .1); border-radius: 6px; background: rgba(255, 255, 255, .4);
+  font: 600 11px/1 var(--texte); color: var(--doux); cursor: var(--curseur-clic); }
+#tiroir-equipe .voir:hover, #tiroir-equipe .voir:focus-visible { background: rgba(255, 255, 255, .92); color: var(--encre); outline: none; }
+/* tiroir ouvert : la fiche de la salle monte au-dessus de « Pôles », et s'efface derrière « Équipe » */
+body[data-tiroir="equipe"] #fiche { display: none; }
+@media (max-width: 1260px) { body[data-tiroir="poles"] #fiche { bottom: 192px; max-height: calc(100vh - 400px); } }
+
 #fps { position: fixed; bottom: 12px; right: 14px; font-family: var(--texte); font-size: 11px; font-variant-numeric: tabular-nums; padding: 4px 9px; border-radius: 6px; }
 
 /* ---------- consignes selon le mode ---------- */
@@ -270,7 +328,9 @@ body.en-visite .consigne-visite { display: block; }
 @media (max-width: 640px) {
   .aide, .aide-visite { display: none; }
   .panneau { width: auto; right: 14px; }
-  #fiche { bottom: 38px; }
+  #fiche { bottom: 52px; }
+  #fps { bottom: 50px; }
+  body[data-tiroir] #fps { display: none; }
   #minimap { width: 170px; }
   #minimap canvas { width: 130px; height: 130px; }
 }
