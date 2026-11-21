@@ -557,7 +557,7 @@ export function construireMonde(scene) {
     sides: { n: 'part', w: 'part', s: 'f' }, doors: [{ side: 'n', off: 0 }], windows: { s: [-2.4, 2.4] },
     floor: { type: 'tile', c1: tint(P.phare.couleur, .66), c2: tint(P.phare.couleur, .8) }, wain: '#fcd34d', cap: '#ca8a04',
     fill(g) {
-      bigScreen(g, -.3, 1.0, -3.4, 0, 2.6, 1.2, 'seo');
+      bigScreen(g, -.3, 1.0, -2.85, 0, 2.6, 1.2, 'seo');      // à un mètre de la cloison : on passe entre l'écran et la porte
       poste(g, -2.0, -1.6, Math.PI, 'seo', ag.sam, A(P.phare.couleur, 2, '#1a1a1a', 'short', { glasses: true }));
       poste(g, 1.4, -1.6, Math.PI, 'social', ag.emma, A(P.phare.couleur, 5, '#e5c07b', 'long'));
       poste(g, 2.4, 1.0, Math.PI, 'chart', ag.ravi, A(P.phare.couleur, 3, '#111111', 'short', { pants: '#1f2937' }));
