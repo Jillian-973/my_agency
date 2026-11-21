@@ -6,6 +6,7 @@ export const ETATS = {
   'au travail': { couleur: '#22c55e' },
   'en pause': { couleur: '#f59e0b' },
   'en attente': { couleur: '#94a3b8' },
+  'en réunion': { couleur: '#0ea5e9' },
 };
 
 export const POLES = {
