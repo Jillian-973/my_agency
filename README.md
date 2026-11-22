@@ -2,7 +2,7 @@
 
 Le quartier général de mes agents IA, en 3D, dans le navigateur : une île qui flotte dans le ciel, un bureau sans toit pour voir dans chaque pièce, une salle par pôle et chaque agent à son poste.
 
-Tout tourne en local : la bibliothèque 3D et les modèles sont dans le dépôt, et le serveur n'écoute que sur `127.0.0.1`.
+Le QG tourne sur ton ordinateur : la bibliothèque 3D et les modèles sont dans le dépôt, et le serveur n'écoute que sur `127.0.0.1`. Une version en ligne (Vercel) permet de le visiter et de lui confier du travail de partout, mais c'est toujours ton ordinateur qui fait travailler les agents (voir « Le QG en ligne »).
 
 ## Lancer le QG
 
@@ -51,6 +51,35 @@ Outils du MCP : `demander_au_ceo`, `suivre_mission` (avec attente jusqu'à la fi
 
 Pour l'utiliser depuis n'importe quel dossier, ajoute une fois le MCP à ta configuration personnelle de Claude Code (`claude mcp add --scope user qg -- node "<chemin du projet>/live/mcp-qg.js"`) et copie `.claude/commands/qg.md` dans `~/.claude/commands/`.
 
+## Le QG en ligne
+
+Le site est aussi publié sur Vercel, avec un connecteur pour Claude. Ton ordinateur reste le moteur : le site en ligne ne fait que déposer les demandes dans une file d'attente (Upstash Redis), et ton QG local (`node live/server.js`) vient les chercher toutes les 1,5 seconde, les fait exécuter par tes agents et renvoie les réponses. Si ton ordinateur est éteint, le site le dit et rien ne démarre.
+
+**Qui peut quoi**
+
+- Tout le monde peut visiter le QG en 3D et voir quels agents travaillent, sans le contenu de leur travail.
+- Avec ton PIN à 6 chiffres (session de 12 heures dans l'onglet) : discuter avec les agents, lire leurs tâches et leurs comptes rendus, voir tes connecteurs.
+- Chaque nouvelle tâche, et chaque mise à la corbeille Gmail, redemande le PIN, même avec une session ouverte.
+- Le Claude relié au QG (connecteur, par OAuth) confie ses demandes à la CEO sans PIN : tu as entré le PIN une seule fois, en le reliant.
+
+**Sécurité**
+
+- Le PIN n'est écrit nulle part : seule son empreinte (scrypt avec un sel) est dans Redis.
+- 5 erreurs de PIN bloquent une adresse 15 minutes ; 30 erreurs en une heure suspendent toute vérification pendant une heure.
+- Jetons de session et jetons OAuth aléatoires, rangés sous leur empreinte. Un code d'autorisation ne sert qu'une fois, avec PKCE obligatoire. Seuls claude.ai, claude.com et un poste local peuvent se relier.
+- Le site en ligne n'exécute rien et ne voit jamais tes fichiers : « Ouvrir son dossier » n'existe que sur le QG local.
+
+**Mise en service (une seule fois)**
+
+1. Dans le projet Vercel du QG : Storage → ajouter Upstash Redis (offre gratuite) et le relier au projet, puis redéployer.
+2. Sur ton ordinateur : `node live/configurer-en-ligne.js`. Il demande l'adresse du site, `KV_REST_API_URL` et `KV_REST_API_TOKEN` (Vercel → Storage → ta base → « .env.local »), puis ton PIN deux fois. Il écrit `live/.qg-en-ligne.json` (jamais versionné) et range l'empreinte du PIN dans Redis.
+3. Redémarre le QG local : la console affiche « QG en ligne : relié ».
+4. Dans Claude (claude.ai → Réglages → Connecteurs → Ajouter un connecteur personnalisé) : nom **QG**, adresse `https://<ton site>/api/mcp`. Claude ouvre la page du QG : entre ton PIN pour l'autoriser.
+
+Ensuite, dans Claude Code, `/qg ta demande` marche partout : dans le dossier du projet, la commande passe par le QG local ; ailleurs (ou sur claude.ai/code), par le connecteur « QG ». Dans une conversation claude.ai, il n'y a pas de commande « / » : demande simplement à Claude de confier ta demande au QG.
+
+Pour changer de PIN, relance `node live/configurer-en-ligne.js` et appuie sur Entrée pour garder l'adresse et le jeton.
+
 ## Organisation
 
 ```
@@ -76,6 +105,10 @@ site/              le QG (servi tel quel)
   vendor/three/    three.js r160 (MIT)
   models/kenney/   modèles 3D Kenney (CC0)
 live/server.js     serveur local sans dépendance : le site et l'API des agents (Claude Code)
+live/en-ligne.js   liaison avec le QG en ligne : file d'attente, état, événements des tâches
+live/configurer-en-ligne.js  configuration du QG en ligne (adresse, stockage, PIN)
+api/qg.js          l'API du QG en ligne (une fonction Vercel) : PIN, OAuth, connecteur MCP, file d'attente
+vercel.json        publication de site/ et réécritures vers api/qg.js
 live/connecteurs.js outils de connecteurs autorisés pour chaque agent, garde-fou, propositions de corbeille
 live/travaux/      dossiers de travail des agents (créés à la première tâche, non versionnés)
 maquettes/         les 7 maquettes successives (la 7 a été validée)
