@@ -6,7 +6,7 @@
 //   pour les autres agents, c'est leur situation habituelle (donnees.js). On y coche aussi des agents, et le sifflet
 //   les appelle en réunion (reunion.js).
 import { POLES, ETATS, AGENTS } from './donnees.js';
-import { SANS_SERVEUR, appeler } from './api.js';
+import { SANS_SERVEUR, EN_LIGNE, aSession, assurerSession, appeler } from './api.js';
 
 const PAUSE_OUVERT = 4000, PAUSE_FERME = 15000;   // rafraîchissement de l'onglet « Équipe » (ouvert / fermé)
 
@@ -134,7 +134,7 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
         const a = pose.agent;
         // la CEO qui pilote une mission apparaît comme au travail, avec la mission
         const pilote = idEquipe(a) === 'jillian' && missions.length && !parAgent.get('jillian')
-          ? { mode: 'mission', debut: Date.now(), resume: missions.length > 1 ? `${missions.length} missions` : missions[0].demande,
+          ? { mode: 'mission', debut: Date.now(), resume: missions.length > 1 ? `${missions.length} missions` : missions[0].demande || '',
             derniere: missions.length === 1 ? `${missions[0].faites}/${missions[0].total} missions terminées` : null } : null;
         const t = parAgent.get(idEquipe(a)) || pilote;
         const li = document.createElement('li'); if (t) li.className = 'en-tache';
@@ -154,7 +154,7 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
         const poste = document.createElement('span'); poste.textContent = a.poste;
         const maintenant = document.createElement('p');
         if (t) {
-          maintenant.textContent = t.mode === 'mission' ? `Pilote ${missions.length > 1 ? t.resume : `une mission : « ${t.resume}${t.resume.length >= 160 ? '…' : ''} »`}`
+          maintenant.textContent = t.mode === 'mission' ? `Pilote ${missions.length > 1 ? t.resume : t.resume ? `une mission : « ${t.resume}${t.resume.length >= 160 ? '…' : ''} »` : 'une mission'}`
             : t.mode === 'corbeille' ? `${t.resume}, ${duree(t.debut)}`
             : `Tâche en cours ${duree(t.debut)}${t.resume ? ` : « ${t.resume}${t.resume.length >= 160 ? '…' : ''} »` : ''}`;
           if (t.derniere) { const d = document.createElement('small'); d.textContent = `${t.mode === 'mission' ? 'Avancement' : 'Dernière action'} : ${t.derniere}`; maintenant.append(d); }
@@ -271,6 +271,12 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
     if (chargement) return chargement;
     if (!outils || forcer) { resumeOutils.textContent = forcer ? 'Vérification de tes connecteurs…' : 'Lecture de tes connecteurs…'; if (!outils) groupesOutils.replaceChildren(); }
     verifier.disabled = true;
+    if (EN_LIGNE && !aSession()) {
+      // en ligne, la liste de tes connecteurs est réservée : le PIN d'abord
+      resumeOutils.textContent = 'La liste de tes connecteurs est réservée : entre ton PIN pour la voir.';
+      groupesOutils.replaceChildren(Object.assign(document.createElement('button'), { type: 'button', className: 'sf-bouton principal', textContent: 'Entrer le PIN', onclick: () => assurerSession('Entre ton PIN pour voir tes connecteurs.') }));
+      return;
+    }
     chargement = appeler('/api/outils' + (forcer ? '?verifier=1' : ''))
       .then((r) => { outils = r; }, () => { outils = { date: Date.now(), connecteurs: [], echec: true }; })
       .finally(() => { chargement = null; verifier.disabled = false; dessinerOutils(); });
@@ -279,5 +285,6 @@ export function creerOnglets({ zones, agentsPoses, allerVers, zoneActive, parler
   verifier.addEventListener('click', () => chargerOutils(true));
   if (!SANS_SERVEUR) setTimeout(() => chargerOutils(false), 3000);   // une première lecture discrète : l'onglet signale un connecteur en panne
 
+  addEventListener('qg:session', () => { rafraichir(); outils = null; chargerOutils(false); });   // PIN entré : détail des tâches et connecteurs
   return { suivreZone, fermer: () => ouvrir(null), rafraichir, redessiner: () => dessinerEquipe() };
 }

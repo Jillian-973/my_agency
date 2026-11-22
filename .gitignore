@@ -39,6 +39,10 @@ live/travaux/
 
 # ── Adresse et jeton du serveur en marche, lus par le MCP du QG : jamais dans le dépôt ──
 live/.qg-session.json
+live/.qg-en-ligne.json
+
+# ── Vercel (liaison locale du projet) ──
+.vercel/
 
 # ── Fichiers temporaires ──
 *.tmp

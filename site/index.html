@@ -212,6 +212,20 @@
 <div class="aide sf-bulle">Clic gauche : tourner · molette ou pincer : zoom · clic droit, ZQSD ou flèches : se déplacer · double-clic : entrer · clic sur un agent : lui parler · Échap : vue d'ensemble</div>
 <div id="fps" class="sf-bulle"></div>
 
+<!-- QG en ligne : le code PIN à 6 chiffres (jamais gardé par la page) -->
+<div id="pin" hidden>
+  <form class="carte sf-cadre cadre-encoche" role="dialog" aria-modal="true" aria-labelledby="pin-titre" autocomplete="off">
+    <h2 id="pin-titre" class="sf-entete">Code PIN</h2>
+    <p class="texte"></p>
+    <input type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off" aria-label="Code PIN à 6 chiffres" placeholder="••••••">
+    <p class="erreur" role="alert" hidden></p>
+    <div class="boutons">
+      <button type="button" class="sf-bouton gris annuler">Annuler</button>
+      <button type="submit" class="sf-bouton principal valider">Valider</button>
+    </div>
+  </form>
+</div>
+
 <script type="module" src="js/main.js"></script>
 </body>
 </html>
