@@ -74,7 +74,10 @@ ${message ? `<p class="err">${echapper(message)}</p>` : ''}
 <input type="password" name="pin" inputmode="numeric" autocomplete="off" pattern="\\d{6}" maxlength="6" required autofocus aria-label="PIN à 6 chiffres">
 <button type="submit">Autoriser</button></form></main></body></html>`;
 }
-const html = (texte, statut = 200) => new Response(texte, { status: statut, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'" } });
+// form-action doit aussi permettre l'adresse de retour (déjà vérifiée) : le navigateur applique cette règle à la
+// redirection qui suit l'envoi du formulaire, et bloquerait sinon le retour vers Claude avec le code.
+const html = (texte, statut = 200, retour = '') => new Response(texte, { status: statut, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; form-action 'self'${retour ? ' ' + retour : ''}; frame-ancestors 'none'` } });
+const origineRetour = (uri) => { try { return new URL(uri).origin; } catch { return ''; } };
 
 async function verifierDemande(p) {
   const client = await lireJSON(`qg:oauth:client:${p.client_id}`);
@@ -88,14 +91,14 @@ export async function pageAutorisation(request) {
   if (q.response_type && q.response_type !== 'code') return html(page(q, 'Type de réponse non pris en charge.'), 400);
   const v = await verifierDemande(q);
   if (v.erreur) return html(page(q, v.erreur), 400);
-  return html(page({ ...q, nom: v.client.nom }));
+  return html(page({ ...q, nom: v.client.nom }), 200, origineRetour(q.redirect_uri));
 }
 export async function autoriser(request) {
   const p = Object.fromEntries(new URLSearchParams(await request.text()));
   const v = await verifierDemande(p);
   if (v.erreur) return html(page(p, v.erreur), 400);
   const pin = await verifierPin(request, p.pin);
-  if (!pin.ok) return html(page({ ...p, nom: v.client.nom }, pin.erreur), pin.statut);
+  if (!pin.ok) return html(page({ ...p, nom: v.client.nom }, pin.erreur), pin.statut, origineRetour(p.redirect_uri));
   const code = aleatoire();
   await ecrireJSON(`qg:oauth:code:${empreinte(code)}`, { client_id: p.client_id, redirect_uri: p.redirect_uri, code_challenge: p.code_challenge }, DUREE_CODE);
   const retour = new URL(p.redirect_uri);
