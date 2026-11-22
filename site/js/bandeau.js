@@ -1,7 +1,7 @@
 // Bandeau du haut : les logos de tes connecteurs qui marchent. Il défile avec les flèches, la molette ou en glissant.
 // Un logo s'allume (halo à la couleur de la marque, prénom de l'agent) tant qu'un agent se sert de ce connecteur,
 // puis redevient normal. Le serveur ne transmet que des noms et des marques (jamais d'adresse ni de commande).
-import { SANS_SERVEUR, appeler } from './api.js';
+import { SANS_SERVEUR, EN_LIGNE, aSession, appeler } from './api.js';
 
 // marque → fichier de site/ui/logos (Simple Icons, CC0 ; les autres sont dessinés pour le QG)
 const LOGOS = {
@@ -60,6 +60,7 @@ export function creerBandeau() {
 
   /* ---------- la liste : connecteurs qui marchent, une tuile par marque ---------- */
   async function chargerListe() {
+    if (EN_LIGNE && !aSession()) return;          // en ligne, tes connecteurs restent cachés tant que le PIN n'est pas entré
     try {
       const r = await appeler('/api/outils');
       const vus = new Map();
@@ -140,5 +141,6 @@ export function creerBandeau() {
   piste.addEventListener('pointerup', lacher); piste.addEventListener('pointercancel', lacher);
 
   if (!SANS_SERVEUR) { rafraichi = Date.now(); chargerListe().then(suivre); }
+  addEventListener('qg:session', () => { rafraichi = Date.now(); chargerListe(); });   // en ligne : les logos après le PIN
   return { recharger: chargerListe };
 }

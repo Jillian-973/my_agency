@@ -4,27 +4,9 @@
 // Du travail en cours, la page ne reçoit que le nom de l'outil et le nom du fichier, jamais leur contenu.
 import { POLES, ETATS } from './donnees.js';
 import { reglerTravail } from './mobilier.js';
-import { JETON, SANS_SERVEUR, appeler } from './api.js';
+import { SANS_SERVEUR, EN_LIGNE, appeler, appelerAvecSession, aSession, ouvrirSession, assurerSession, suivreFlux } from './api.js';
+import { demanderPin } from './pin.js';
 import { portrait } from './portrait.js';
-
-/** Flux d'une tâche (format « server-sent events »), lu avec fetch pour envoyer le jeton dans un en-tête. */
-async function suivreFlux(id, surEvenement) {
-  const r = await fetch(`/api/taches/${id}/flux`, { headers: { 'x-qg-jeton': JETON }, cache: 'no-store' });
-  if (!r.ok || !r.body) throw new Error(r.status === 404 ? 'Tâche inconnue : le serveur a sans doute redémarré.' : `Le serveur a répondu ${r.status}.`);
-  const lecteur = r.body.pipeThrough(new TextDecoderStream()).getReader();
-  let tampon = '';
-  for (;;) {
-    const { value, done } = await lecteur.read();
-    if (done) return;
-    tampon += value;
-    let i;
-    while ((i = tampon.indexOf('\n\n')) >= 0) {
-      const bloc = tampon.slice(0, i); tampon = tampon.slice(i + 2);
-      const donnees = bloc.split('\n').filter(l => l.startsWith('data:')).map(l => l.slice(5).trim()).join('\n');
-      if (donnees) { try { surEvenement(JSON.parse(donnees)); } catch { /* ligne illisible : ignorée */ } }
-    }
-  }
-}
 
 /* ---------- la fenêtre ---------- */
 export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLieu = () => '', voirLieu = null }) {
@@ -54,7 +36,7 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
 
   /* ----- la fiche : qui il est, ce qu'il fait, son rôle ----- */
   const majuscule = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-  let enCoursServeur = [], missionsServeur = [];              // tâches vues par le serveur (lancées ici, ailleurs ou par la CEO), missions de la CEO
+  let enCoursServeur = [], missionsServeur = [], pcEteint = false;   // pcEteint : QG en ligne, ordinateur du QG éteint              // tâches vues par le serveur (lancées ici, ailleurs ou par la CEO), missions de la CEO
   function dessinerFiche() {
     const agent = actuel, pose = poseDe(agent.id);
     // portrait en buste, à la couleur de son pôle
@@ -95,7 +77,7 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
     let activite, detail = '';
     if (idEquipe(agent) === 'jillian' && missionsServeur.length && !(t && !t.fin)) {
       const m = missionsServeur[0];
-      activite = missionsServeur.length > 1 ? `Pilote ${missionsServeur.length} missions pour toi` : `Pilote une mission : « ${m.demande}${m.demande.length >= 160 ? '…' : ''} »`;
+      activite = missionsServeur.length > 1 ? `Pilote ${missionsServeur.length} missions pour toi` : m.demande ? `Pilote une mission : « ${m.demande}${m.demande.length >= 160 ? '…' : ''} »` : 'Pilote une mission';
       detail = m.etat === 'planification' ? 'Elle prépare le plan et choisit les agents.' : m.etat === 'synthese' ? 'Elle rédige son compte rendu.'
         : `${m.faites}/${m.total} missions terminées${m.total ? ` · étape ${m.etape}` : ''}`;
     } else if ((t && !t.fin) || serveur) {
@@ -136,8 +118,9 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
       (cnx ? `, avec ses connecteurs : ${cnx.join(', ')} (seulement les outils prévus pour son poste, jamais d'envoi).` : ", rien d'autre.") + ' 4 tâches en même temps au plus.';
     majEtat();
     const t = taches.get(agent.id);
-    ui.message.hidden = !(SANS_SERVEUR || !claudeOk);
+    ui.message.hidden = !(SANS_SERVEUR || !claudeOk || (EN_LIGNE && pcEteint));
     if (SANS_SERVEUR) ui.message.textContent = 'Pour parler aux agents, ouvre le QG avec le serveur local : node live/server.js';
+    else if (EN_LIGNE && pcEteint) ui.message.textContent = 'Le QG local est éteint : les agents travaillent sur l\'ordinateur du QG, qui doit être allumé avec node live/server.js.';
     else if (!claudeOk) ui.message.textContent = 'Claude Code est introuvable sur cet ordinateur : les agents ne peuvent pas répondre.';
     dessinerFiche();
     choisir(null);                                           // on arrive toujours sur la fiche
@@ -183,6 +166,7 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
   // Échap ferme la fenêtre (avant les autres raccourcis de la page)
   addEventListener('keydown', (e) => {
     if (racine.hidden) return;
+    if (e.code === 'Escape' && document.getElementById('pin')?.hidden === false) return;   // c'est la fenêtre du PIN qui se ferme
     if (e.code === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); fermer(); }
   }, true);
 
@@ -214,7 +198,7 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
     ui.saisie.value = '';
     dessinerFil();
     try {
-      const r = await appeler('/api/discuter', { agent: idEquipe(agent), messages: envoi });
+      const r = await appelerAvecSession('/api/discuter', { agent: idEquipe(agent), messages: envoi });
       fil.splice(fil.indexOf(attente), 1, { role: 'agent', texte: r.reponse || '…' });
     } catch (err) {
       fil.splice(fil.indexOf(attente), 1, { role: 'erreur', texte: err.message });
@@ -252,8 +236,9 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
     if (!t.fin) return;
     ui.compteRendu.textContent = [t.fin.compteRendu, t.fin.erreur && !t.fin.ok ? `⚠ ${t.fin.erreur}` : ''].filter(Boolean).join('\n\n') || 'Pas de compte rendu.';
     ui.fichiers.replaceChildren(...(t.fin.fichiers || []).map(f => { const li = document.createElement('li'); li.textContent = f; return li; }));
-    ui.cout.textContent = typeof t.fin.cout === 'number' ? `Coût de la tâche : ${t.fin.cout.toFixed(2).replace('.', ',')} $ (plafond 2 $)` : '';
-    ui.ouvrir.hidden = !t.id;
+    const plafond = t.fin.plafond ?? modeles[idEquipe(actuel)]?.plafond;      // celui du modèle de l'agent (live/modeles.js)
+    ui.cout.textContent = typeof t.fin.cout === 'number' ? `Coût de la tâche : ${t.fin.cout.toFixed(2).replace('.', ',')} $${plafond ? ` (plafond ${String(plafond).replace('.', ',')} $)` : ''}` : '';
+    ui.ouvrir.hidden = !t.id || EN_LIGNE;      // le dossier est sur l'ordinateur du QG
     // mails proposés pour la corbeille : rien ne part sans ton accord
     const props = !t.corbeilleLancee && Array.isArray(t.fin.propositions) ? t.fin.propositions : [];
     ui.propositions.hidden = !props.length;
@@ -300,9 +285,15 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
     const consigne = ui.consigne.value.trim();
     if (!consigne || !actuel) return;
     const agent = actuel, bouton = ui.confier.querySelector('button');
+    let pin;
+    if (EN_LIGNE) {
+      pin = await demanderPin({ titre: 'Nouvelle tâche', texte: `Entre ton PIN pour confier cette tâche à ${prenomDe(agent)}. Il est demandé à chaque tâche.` });
+      if (!pin) return;
+    }
     bouton.disabled = true; ui.message.hidden = true;
     try {
-      const { id } = await appeler('/api/taches', { agent: idEquipe(agent), consigne });
+      if (EN_LIGNE && !aSession()) await ouvrirSession(pin);       // pour suivre ensuite la tâche
+      const { id } = await appeler('/api/taches', { agent: idEquipe(agent), consigne, pin });
       ui.consigne.value = '';
       suivre(agent.id, id, consigne.replace(/\s+/g, ' '));
       if (actuel === agent) { majEtat(); dessinerTache(); }
@@ -324,7 +315,9 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
     const agent = actuel;
     ui.corbeille.disabled = true; ui.message.hidden = true;
     try {
-      const { id } = await appeler(`/api/taches/${t.id}/corbeille`, { threadIds });
+      let pin;
+      if (EN_LIGNE) { pin = await demanderPin({ titre: 'Corbeille Gmail', texte: `Entre ton PIN pour mettre ${threadIds.length} mail${threadIds.length > 1 ? 's' : ''} à la corbeille Gmail.` }); if (!pin) { ui.corbeille.disabled = false; return; } }
+      const { id } = await appeler(`/api/taches/${t.id}/corbeille`, { threadIds, pin });
       t.corbeilleLancee = true;
       suivre(agent.id, id);
       if (actuel === agent) { majEtat(); dessinerTache(); }
@@ -347,6 +340,14 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
       connecteurs = etat.connecteurs || {};
       modeles = etat.modeles || {}; modeleDiscussion = etat.discussion || '';
       enCoursServeur = etat.enCours || []; missionsServeur = etat.missions || [];
+      pcEteint = EN_LIGNE && etat.pc === false;
+      if (!aSession()) {
+        // visiteur sans PIN : les agents occupés tapent à leur bureau, sans le contenu de leur travail
+        const occupes = new Set(enCoursServeur.map(t => t.agent));
+        for (const p of agentsPoses) reglerTravail(p, occupes.has(idEquipe(p.agent)) || (idEquipe(p.agent) === 'jillian' && missionsServeur.length > 0));
+        if (actuel && !onglet) dessinerMaintenant();
+        return;
+      }
       for (const { id, agent } of enCoursServeur) {
         const pose = agentsPoses.find(p => idEquipe(p.agent) === agent);
         const t = pose && taches.get(pose.agent.id);
@@ -359,6 +360,7 @@ export function creerFenetreAgent({ agentsPoses, quandFermee = () => {}, nomDuLi
     } catch { /* serveur ancien ou injoignable : la fenêtre l'indiquera à l'usage */ }
   }
   if (!SANS_SERVEUR) { synchroniser(); setInterval(() => { if (!document.hidden) synchroniser(); }, 5000); }
+  addEventListener('qg:session', () => synchroniser());          // PIN entré : on récupère le détail du travail
 
   return { ouvrir, fermer, ouverte: () => !racine.hidden };
 }
