@@ -205,58 +205,111 @@ Pour changer de PIN, relance `node live/configurer-en-ligne.js` et appuie sur En
 
 ## Organisation du code
 
-```text
-site/                     le QG, servi tel quel (en local et sur Vercel)
-  index.html              page principale
-  mentions.html           crédits des modèles et des bibliothèques
-  css/qg.css              styles de l'interface
-  js/main.js              caméra, interactions, optimisation, boucle d'affichage
-  js/donnees.js           pôles, salles et agents (repris de EQUIPE.md)
-  js/monde.js             l'île, le bâtiment, les salles et leur contenu
-  js/mobilier.js          meubles, personnages et mascottes
-  js/details.js           petits objets : tasses, livres, lampes, enseignes
-  js/etiquettes.js        étiquettes des salles et des agents
-  js/modeles.js           chargement des modèles Kenney
-  js/outils.js            matériaux, formes et textures communes
-  js/graphismes.js        qualité des graphismes (élevés / légers)
-  js/planetes.js          planètes en orbite et Lune à sa vraie phase
-  js/visite.js            visite à la première personne
-  js/collisions.js        murs et meubles qu'on ne traverse pas
-  js/minimap.js           plan affiché pendant la visite
-  js/chemins.js           chemins dans le QG (grille et A*)
-  js/marche.js            personnages qui marchent, portes qui s'ouvrent
-  js/reunion.js           réunions et pauses des agents
-  js/foule.js             promeneurs et figurants
-  js/fous.js              tapis de course, drone, robot aspirateur
-  js/onglets.js           onglets Pôles, Équipe et Outils
-  js/bandeau.js           bandeau des logos de connecteurs
-  js/fenetre-agent.js     fiche d'un agent : discuter, confier une tâche, suivre son travail
-  js/portrait.js          portrait 3D de la fiche
-  js/api.js               liaison avec le serveur (local ou en ligne)
-  js/pin.js               fenêtre du code PIN (en ligne)
-  ui/                     interface Kenney, logos, polices
-  models/kenney/          modèles 3D Kenney
-  vendor/three/           three.js r160
-live/                     le moteur, sur ton ordinateur
-  server.js               serveur local sans dépendance : le site et l'API des agents
-  modeles.js              modèle et plafond de chaque agent
-  connecteurs.js          outils de connecteurs autorisés par agent, garde-fou, corbeille
-  outils-mcp.js           état des connecteurs (claude mcp list)
-  ceo.js                  la CEO : planification, étapes, compte rendu
-  mcp-qg.js               MCP local pour Claude Code
-  en-ligne.js             liaison avec le QG en ligne (file d'attente)
-  configurer-en-ligne.js  configuration du QG en ligne (stockage, PIN)
-  travaux/                dossiers de travail des agents (non versionnés)
-api/                      le QG en ligne (Vercel)
-  qg.js                   une seule fonction : PIN, sessions, OAuth, connecteur MCP, file d'attente
-  _lib/                   Redis, sécurité, OAuth, MCP, file d'attente
-vercel.json               publication de site/ et réécritures vers api/qg.js
-.mcp.json                 déclaration du MCP local
-.claude/commands/qg.md    la commande /qg
-maquettes/                les 7 maquettes successives (la 7 a été validée)
-BRIEF.md                  le cahier des charges
-EQUIPE.md                 les pôles, les agents, les lieux et les mascottes
+### Vue d'ensemble
+
+```mermaid
+flowchart LR
+  subgraph Navigateur["🌐 Navigateur"]
+    page["site/<br/>le QG en 3D"]
+  end
+  subgraph Claude["🤖 Claude"]
+    cc["Claude Code<br/>/qg"]
+    ai["claude.ai<br/>connecteur « QG »"]
+  end
+  subgraph Vercel["☁️ Vercel"]
+    api["api/qg.js<br/>PIN · OAuth · MCP"]
+    redis[("Upstash Redis<br/>file d'attente")]
+  end
+  subgraph PC["💻 Ton ordinateur"]
+    srv["live/server.js<br/>le moteur"]
+    ceo["live/ceo.js<br/>la CEO"]
+    agents["Sessions Claude Code<br/>les agents"]
+  end
+
+  page -- "en local" --> srv
+  page -- "en ligne" --> api
+  ai --> api
+  cc -- "MCP local" --> srv
+  cc -. "hors du projet" .-> ai
+  api <--> redis
+  srv <-- "toutes les 1,5 s" --> redis
+  srv --> ceo --> agents
+  srv --> agents
 ```
+
+### Les dossiers
+
+```text
+my_agency/
+│
+├── 🏝️ site/ ─────────────────── le QG, servi tel quel (en local et sur Vercel)
+│   ├── index.html                  page principale
+│   ├── mentions.html               crédits des modèles et des bibliothèques
+│   ├── css/qg.css                  styles de l'interface
+│   ├── js/
+│   │   ├── 🧱 le monde
+│   │   │   ├── main.js             caméra, interactions, boucle d'affichage
+│   │   │   ├── donnees.js          pôles, salles et agents (repris de EQUIPE.md)
+│   │   │   ├── monde.js            l'île, le bâtiment, les salles
+│   │   │   ├── mobilier.js         meubles, personnages, mascottes
+│   │   │   ├── details.js          tasses, livres, lampes, enseignes
+│   │   │   ├── modeles.js          chargement des modèles Kenney
+│   │   │   ├── outils.js           matériaux, formes, textures communes
+│   │   │   ├── graphismes.js       qualité élevée ou légère
+│   │   │   └── planetes.js         planètes en orbite, Lune à sa vraie phase
+│   │   ├── 🚶 la vie du QG
+│   │   │   ├── visite.js           visite à la première personne
+│   │   │   ├── collisions.js       murs et meubles qu'on ne traverse pas
+│   │   │   ├── minimap.js          plan affiché pendant la visite
+│   │   │   ├── chemins.js          grille du sol et algorithme A*
+│   │   │   ├── marche.js           pas, bras qui balancent, portes qui s'ouvrent
+│   │   │   ├── reunion.js          réunions et pauses des agents
+│   │   │   ├── foule.js            promeneurs et figurants
+│   │   │   └── fous.js             tapis de course, drone, robot aspirateur
+│   │   └── 🪟 l'interface
+│   │       ├── etiquettes.js       étiquettes des salles et des agents
+│   │       ├── onglets.js          onglets Pôles, Équipe, Outils
+│   │       ├── bandeau.js          logos des connecteurs
+│   │       ├── fenetre-agent.js    fiche d'un agent : discuter, confier une tâche
+│   │       ├── portrait.js         portrait 3D de la fiche
+│   │       ├── api.js              liaison avec le serveur (local ou en ligne)
+│   │       └── pin.js              fenêtre du code PIN
+│   ├── ui/                         interface Kenney, logos, polices
+│   ├── models/kenney/              modèles 3D
+│   └── vendor/three/               three.js r160
+│
+├── ⚙️ live/ ─────────────────── le moteur, sur ton ordinateur
+│   ├── server.js                   serveur local sans dépendance : site + API des agents
+│   ├── modeles.js                  modèle et plafond de chaque agent
+│   ├── connecteurs.js              outils autorisés par agent, garde-fou, corbeille
+│   ├── outils-mcp.js               état des connecteurs (claude mcp list)
+│   ├── ceo.js                      la CEO : planification, étapes, compte rendu
+│   ├── mcp-qg.js                   MCP local pour Claude Code
+│   ├── en-ligne.js                 liaison avec le QG en ligne
+│   ├── configurer-en-ligne.js      configuration du QG en ligne (stockage, PIN)
+│   └── travaux/                    dossiers de travail des agents (non versionnés)
+│
+├── ☁️ api/ ──────────────────── le QG en ligne (une fonction Vercel)
+│   ├── qg.js                       routes : PIN, sessions, OAuth, MCP, file d'attente
+│   └── _lib/
+│       ├── redis.js                accès à Upstash Redis
+│       ├── securite.js             PIN, sessions, limite d'essais
+│       ├── oauth.js                liaison du connecteur Claude
+│       ├── mcp.js                  outils du connecteur
+│       └── file.js                 file d'attente vers ton ordinateur
+│
+├── 🧩 configuration
+│   ├── vercel.json                 publication de site/, réécritures vers api/qg.js
+│   ├── .mcp.json                   déclaration du MCP local
+│   └── .claude/commands/qg.md      la commande /qg
+│
+└── 📄 documents
+    ├── BRIEF.md                    le cahier des charges
+    ├── EQUIPE.md                   pôles, agents, lieux, mascottes
+    └── maquettes/                  les 7 maquettes successives (la 7 a été validée)
+```
+
+> Les sous-titres en émoji (🧱, 🚶, 🪟, 🧩, 📄) regroupent les fichiers par rôle : ce ne sont pas de vrais dossiers.
 
 ## Feuille de route
 
