@@ -37,6 +37,7 @@ const BUDGET_CORBEILLE = 0.5;      // dollars pour mettre à la corbeille les ma
 const CNX = require('./connecteurs.js');
 const MOD = require('./modeles.js');
 const { creerCeo } = require('./ceo.js');
+const EN_LIGNE = require('./en-ligne.js');
 // fichier lu par le MCP du QG (live/mcp-qg.js) pour joindre ce serveur : adresse et jeton de ce démarrage, jamais versionné
 const SESSION_MCP = path.join(__dirname, '.qg-session.json');
 const OUTILS = require('./outils-mcp.js');
@@ -152,7 +153,9 @@ function diffuser(t, evt) {
   t.evenements.push(evt);
   const ligne = `data: ${JSON.stringify(evt)}\n\n`;
   for (const res of t.abonnes) res.write(ligne);
+  if (LIEN) LIEN.publierEvenement(t.id, evt);       // le QG en ligne suit aussi la tâche
 }
+let LIEN = null;                                     // liaison avec le QG en ligne (live/en-ligne.js), si elle est configurée
 /** Nom du fichier touché par un outil (jamais son contenu, jamais une requête ou une adresse web). */
 function fichierDe(entree) {
   const p = entree && (entree.file_path || entree.path || entree.notebook_path);
@@ -263,6 +266,7 @@ function lancerTache(agent, consigne, { mode = 'tache', idsCorbeille = null, qua
         erreur: resultat.is_error ? (budget ? `Plafond de ${budgetMax} $ atteint.` : `Arrêt : ${resultat.subtype || 'erreur'}`) : null,
         fichiers: crees,
         cout: typeof resultat.total_cost_usd === 'number' ? Math.round(resultat.total_cost_usd * 100) / 100 : null,
+        plafond: budgetMax,
       });
     });
     enfant.stdin.end(consigne);
@@ -302,6 +306,61 @@ function ouvrirDossier(dossier) {
   spawn(cmd, args, { detached: true, stdio: 'ignore', windowsHide: false }).unref();
 }
 
+/* ===================== Commun à la page locale et au QG en ligne ===================== */
+function confierTache(agent, consigneBrute) {
+  const consigne = texte(consigneBrute, 8000);
+  if (!agent) return { statut: 404, erreur: 'Agent inconnu dans EQUIPE.md.' };
+  if (!consigne) return { statut: 400, erreur: 'Consigne vide.' };
+  if (enCours().some(t => t.agent === agent.id)) return { statut: 409, erreur: `${agent.prenom} est déjà sur une tâche.` };
+  if (enCours().length >= TACHES_MAX) return { statut: 429, erreur: `${TACHES_MAX} tâches tournent déjà : attends qu'une se termine.` };
+  const t = lancerTache(agent, consigne);
+  return { id: t.id, dossier: path.relative(RACINE, t.dossier).split(path.sep).join('/') };
+}
+/** Corbeille Gmail, seulement sur ton accord : les mails cochés, parmi ceux que l'agent a proposés. */
+function lancerCorbeille(t, threadIds) {
+  const agent = t && EQUIPE[t.agent];
+  if (!agent) return { statut: 404, erreur: 'Tâche inconnue.' };
+  if (t.etat !== 'terminee' || !t.propositions || !t.propositions.length) return { statut: 400, erreur: 'Aucune proposition à valider pour cette tâche.' };
+  if (t.corbeilleLancee) return { statut: 409, erreur: 'Ces propositions ont déjà été traitées.' };
+  const proposes = new Map(t.propositions.map(x => [x.threadId, x]));
+  const ids = [...new Set((Array.isArray(threadIds) ? threadIds : []).map(String))];
+  if (!ids.length || ids.some(i => !proposes.has(i))) return { statut: 400, erreur: 'Choisis des mails parmi ceux que l\'agent a proposés.' };
+  if (enCours().some(x => x.agent === agent.id)) return { statut: 409, erreur: `${agent.prenom} est déjà sur une tâche.` };
+  if (enCours().length >= TACHES_MAX) return { statut: 429, erreur: `${TACHES_MAX} tâches tournent déjà : attends qu'une se termine.` };
+  t.corbeilleLancee = true;
+  const liste = ids.map(i => { const x = proposes.get(i); return `- ${i} (${x.de} · ${x.objet})`; }).join('\n');
+  const nt = lancerTache(agent, `Mets à la corbeille ces ${ids.length} fils Gmail, que j'ai validés :\n${liste}`, { mode: 'corbeille', idsCorbeille: new Set(ids) });
+  return { id: nt.id };
+}
+let outilsConnus = [];                               // dernier état des connecteurs (claude mcp list), pour le QG en ligne
+function etatComplet() {
+  const connecteurs = Object.fromEntries(Object.keys(EQUIPE).filter(CNX.aDesConnecteurs).map(id => [id, CNX.connecteursDe(id)]));
+  return {
+    claude: !!CLAUDE, enCours: enCours().map(t => ({ id: t.id, agent: t.agent, mode: t.mode, debut: t.debut, resume: t.resume, derniere: t.derniere })),
+    max: TACHES_MAX, connecteurs, actifs: OUTILS.usagesActifs(),
+    modeles: Object.fromEntries(Object.keys(EQUIPE).map(id => { const m = MOD.modeleDe(id); return [id, { nom: m.nom, plafond: m.plafond }]; })),
+    discussion: MOD.DISCUSSION.nom,
+    missions: CEO.actives().map(m => ({ id: m.id, demande: m.demande.slice(0, 160), etat: m.etat, etape: m.etape,
+      total: m.sousTaches.length, faites: m.sousTaches.filter(st => st.etat === 'terminee' || st.etat === 'echec').length })),
+    outils: outilsConnus,
+  };
+}
+/** Une demande venue du QG en ligne (déjà autorisée là-bas : PIN ou connecteur relié par OAuth). */
+async function traiterEnLigne(job) {
+  const agent = EQUIPE[String(job.agent || '')];
+  switch (job.type) {
+    case 'discussion':
+      if (!agent) return { erreur: 'Agent inconnu.' };
+      return await discuter(agent, (job.messages || []).slice(-12));
+    case 'tache': return confierTache(agent, job.consigne);
+    case 'corbeille': return lancerCorbeille(taches.get(String(job.tache)), job.threadIds);
+    case 'ceo':
+      if (CEO.actives().length >= 3) return { erreur: 'La CEO pilote déjà 3 missions : attends qu\'une se termine.' };
+      return { mission: await CEO.demander(texte(job.demande, 8000)) };
+    default: return { erreur: 'Demande inconnue.' };
+  }
+}
+
 /* ===================== Sécurité de l'API ===================== */
 // Une demande n'est acceptée que si : elle arrive par l'adresse locale (protège du « DNS rebinding »),
 // son origine est la page du QG quand le navigateur l'indique, et elle porte le jeton secret de la page.
@@ -336,14 +395,7 @@ async function api(req, res, url) {
   if (!demandeDuQG(req)) return json(res, 403, { erreur: 'Demande refusée : elle ne vient pas de la page du QG.' });
   const p = url.pathname;
 
-  if (req.method === 'GET' && p === '/api/etat') {
-    const connecteurs = Object.fromEntries(Object.keys(EQUIPE).filter(CNX.aDesConnecteurs).map(id => [id, CNX.connecteursDe(id)]));
-    return json(res, 200, { claude: !!CLAUDE, enCours: enCours().map(t => ({ id: t.id, agent: t.agent, mode: t.mode, debut: t.debut, resume: t.resume, derniere: t.derniere })), max: TACHES_MAX, connecteurs, actifs: OUTILS.usagesActifs(),
-      modeles: Object.fromEntries(Object.keys(EQUIPE).map(id => { const m = MOD.modeleDe(id); return [id, { nom: m.nom, plafond: m.plafond }]; })),
-      discussion: MOD.DISCUSSION.nom,
-      missions: CEO.actives().map(m => ({ id: m.id, demande: m.demande.slice(0, 160), etat: m.etat, etape: m.etape,
-        total: m.sousTaches.length, faites: m.sousTaches.filter(st => st.etat === 'terminee' || st.etat === 'echec').length })) });
-  }
+  if (req.method === 'GET' && p === '/api/etat') return json(res, 200, etatComplet());
 
   // la CEO : une demande, qu'elle découpe et distribue à l'équipe (appelée par le MCP du QG depuis Claude Code)
   if (req.method === 'POST' && p === '/api/ceo') {
@@ -381,12 +433,8 @@ async function api(req, res, url) {
       catch (e) { return json(res, 502, { erreur: e.message }); }
     }
 
-    const consigne = texte(corps.consigne, 8000);
-    if (!consigne) return json(res, 400, { erreur: 'Consigne vide.' });
-    if (enCours().some(t => t.agent === agent.id)) return json(res, 409, { erreur: `${agent.prenom} est déjà sur une tâche.` });
-    if (enCours().length >= TACHES_MAX) return json(res, 429, { erreur: `${TACHES_MAX} tâches tournent déjà : attends qu'une se termine.` });
-    const t = lancerTache(agent, consigne);
-    return json(res, 201, { id: t.id, dossier: path.relative(RACINE, t.dossier).split(path.sep).join('/') });
+    const r = confierTache(agent, corps.consigne);
+    return r.erreur ? json(res, r.statut, { erreur: r.erreur }) : json(res, 201, r);
   }
 
   const m = p.match(/^\/api\/taches\/([0-9a-f-]{36})\/(flux|ouvrir|corbeille)$/);
@@ -397,18 +445,8 @@ async function api(req, res, url) {
   if (m && m[2] === 'corbeille' && req.method === 'POST') {
     if ((req.headers['content-type'] || '').split(';')[0] !== 'application/json') return json(res, 415, { erreur: 'JSON attendu.' });
     let corps; try { corps = await lireCorps(req); } catch (e) { return json(res, 400, { erreur: e.message }); }
-    const agent = EQUIPE[t.agent];
-    if (t.etat !== 'terminee' || !t.propositions || !t.propositions.length) return json(res, 400, { erreur: 'Aucune proposition à valider pour cette tâche.' });
-    if (t.corbeilleLancee) return json(res, 409, { erreur: 'Ces propositions ont déjà été traitées.' });
-    const proposes = new Map(t.propositions.map(x => [x.threadId, x]));
-    const ids = [...new Set((Array.isArray(corps.threadIds) ? corps.threadIds : []).map(String))];
-    if (!ids.length || ids.some(i => !proposes.has(i))) return json(res, 400, { erreur: 'Choisis des mails parmi ceux que l\'agent a proposés.' });
-    if (enCours().some(x => x.agent === agent.id)) return json(res, 409, { erreur: `${agent.prenom} est déjà sur une tâche.` });
-    if (enCours().length >= TACHES_MAX) return json(res, 429, { erreur: `${TACHES_MAX} tâches tournent déjà : attends qu'une se termine.` });
-    t.corbeilleLancee = true;
-    const liste = ids.map(i => { const x = proposes.get(i); return `- ${i} (${x.de} · ${x.objet})`; }).join('\n');
-    const nt = lancerTache(agent, `Mets à la corbeille ces ${ids.length} fils Gmail, que j'ai validés :\n${liste}`, { mode: 'corbeille', idsCorbeille: new Set(ids) });
-    return json(res, 201, { id: nt.id });
+    const r = lancerCorbeille(t, corps.threadIds);
+    return r.erreur ? json(res, r.statut, { erreur: r.erreur }) : json(res, 201, r);
   }
   if (m && m[2] === 'flux' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Content-Type-Options': 'nosniff' });
@@ -478,6 +516,12 @@ server.listen(PORT, HOST, () => {
   console.log(CLAUDE ? `Claude Code : ${CLAUDE}` : 'Attention : Claude Code introuvable, les agents ne pourront pas répondre.');
   console.log(`Agents lus dans EQUIPE.md : ${Object.keys(EQUIPE).length}`);
   for (const a of CNX.verifierEquipe(EQUIPE)) console.log(`Attention, connecteurs : ${a}`);
+  // liaison avec le QG en ligne (seulement si live/.qg-en-ligne.json existe)
+  LIEN = EN_LIGNE.creerLien({ traiter: traiterEnLigne, etat: etatComplet, missions: () => CEO.liste() });
+  if (LIEN) {
+    const majOutils = () => CLAUDE && OUTILS.lireConnecteurs(CLAUDE, RACINE).then(r => { if (!r.erreur) outilsConnus = r.liste; }).catch(() => {});
+    majOutils(); setInterval(majOutils, 5 * 60e3);
+  }
   // repérage des connecteurs branchés dès le démarrage, pour que la première tâche démarre plus vite
   if (CLAUDE) CNX.decouvrir(CLAUDE).then((d) => {
     if (!d.serveurs.length) return console.log('Connecteurs : aucun repéré (ils seront recherchés à la première tâche).');
